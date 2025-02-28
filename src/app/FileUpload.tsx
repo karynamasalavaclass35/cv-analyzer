@@ -1,8 +1,21 @@
 "use client";
 
+import { useState } from "react";
+
 export default function FileUpload() {
+  const [prompt, setPrompt] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log(prompt, file);
+  };
+
   return (
-    <form className="p-10 bg-gray-100 rounded-lg w-1/2 flex flex-col gap-4">
+    <form
+      className="p-10 bg-gray-100 rounded-lg w-1/2 flex flex-col gap-4"
+      onSubmit={handleSubmit}
+    >
       <label
         htmlFor="dropzone-file"
         className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
@@ -30,13 +43,32 @@ export default function FileUpload() {
           <p className="text-xs text-gray-500 dark:text-gray-400">
             PDF, DOC, DOCX
           </p>
+          {file && (
+            <p className="mt-2 text-sm text-blue-500 font-medium">
+              Selected: {file.name}
+            </p>
+          )}
         </div>
-        <input id="dropzone-file" type="file" className="hidden" />
+        <input
+          id="dropzone-file"
+          type="file"
+          className="hidden"
+          accept=".pdf,.doc,.docx"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
       </label>
+
+      <textarea
+        value={prompt}
+        onChange={(e) => setPrompt(e.target.value)}
+        className="w-full h-40 border border-gray-300 text-sm rounded-lg p-2 resize-none focus:outline-none"
+        placeholder="Enter your prompt..."
+      />
 
       <button
         type="submit"
-        className="self-end w-fit bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4"
+        className="self-end w-fit bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={!file || !prompt}
       >
         Upload CV
       </button>

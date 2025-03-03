@@ -1,14 +1,33 @@
 "use client";
 
 import { useState } from "react";
+import OpenAI from "openai";
+import { extractFromPDF } from "@/app/utils";
 
 export default function FileUpload() {
   const [prompt, setPrompt] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log(prompt, file);
+    if (!file) return;
+    const cvText = await extractFromPDF(file);
+    // const analysis = await analyzeCV(cvText, prompt);
+    console.log(cvText);
+  };
+
+  const openai = new OpenAI({
+    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+    dangerouslyAllowBrowser: true,
+  });
+
+  const analyzeCV = async (cvText: string, prompt: string) => {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: `${prompt}\n\n${cvText}` }],
+    });
+
+    return response.choices[0].message.content;
   };
 
   return (

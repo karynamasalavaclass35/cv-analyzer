@@ -1,8 +1,8 @@
-import FileUpload from "./FileUpload";
+import FileUpload from "./components/FileUpload";
 
 export default function Home() {
   return (
-    <div className=" h-screen w-screen">
+    <div className="h-screen w-screen">
       <main className="flex items-center justify-center w-full h-full">
         <FileUpload />
       </main>

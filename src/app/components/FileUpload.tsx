@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { extractFromPDF } from "../utils";
 
 export default function FileUpload() {
   const [prompt, setPrompt] = useState("");
@@ -8,51 +9,40 @@ export default function FileUpload() {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
 
-  const uploadCV = async (cvFile: File) => {
-    const formData = new FormData();
-    formData.append("file", cvFile);
-    formData.append("purpose", "cv-analysis");
+  const analyzeCV = async (cvText: string, prompt: string): Promise<string> => {
+    const promptText = `Please analyze the CV, here is the text from it: ${cvText} and determine if it matches the following job description: ${prompt}. Please provide detailed feedback.`;
 
-    const response = await fetch("http://localhost:5002/v1/files", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const response = await fetch("http://localhost:11434/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-r1",
+          prompt: promptText,
+          stream: false, // to get a complete response
+          messages: [
+            {
+              role: "user",
+              content: promptText,
+            },
+          ],
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error("Failed to upload CV");
-    }
-
-    return await response.json();
-  };
-
-  const analyzeCV = async (fileId: string, jobDescription: string) => {
-    const analysisRequest = {
-      model: "gpt-3.5-turbo",
-      prompt: `Please analyze the CV in file ${fileId} and determine if it matches the following job description: ${jobDescription}. Please provide detailed feedback.`,
-    };
-
-    const response = await fetch("http://localhost:5002/v1/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(analysisRequest),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || "Failed to analyze CV");
-    }
-
-    const result = await response.json();
-
-    if (result.choices?.[0]) {
-      const choice = result.choices[0];
-
-      if (!choice.text && choice.message) {
-        choice.text = choice.message.content;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to analyze CV");
       }
-    }
 
-    return result;
+      const result = await response.json();
+
+      return result.response;
+    } catch (error) {
+      console.error("Error analyzing CV:", error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -61,15 +51,9 @@ export default function FileUpload() {
 
     try {
       setLoading(true);
-
-      const { id: cvId } = await uploadCV(file);
-      const { choices } = await analyzeCV(cvId, prompt);
-
-      if (choices?.[0]) {
-        setAnalysis(choices[0].text ?? "No analysis available");
-      } else {
-        throw new Error("Invalid response format from analysis");
-      }
+      const cvText = await extractFromPDF(file);
+      const analysisResult = await analyzeCV(cvText, prompt);
+      setAnalysis(analysisResult);
     } catch (error) {
       console.error("Error:", error);
       alert(error instanceof Error ? error.message : "Failed to process CV");

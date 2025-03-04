@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { extractFromPDF, processTextStreaming } from "@/app/utils";
+import {
+  extractFromDocument,
+  extractFromPDF,
+  processTextStreaming,
+} from "@/app/utils";
 
 export default function FileUpload() {
   const [requiredPosition, setRequiredPosition] = useState("");
@@ -40,13 +44,21 @@ export default function FileUpload() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
     if (!file) return;
 
     try {
       setLoading(true);
       setAnalysis("");
 
-      const cvText = await extractFromPDF(file);
+      let cvText = "";
+
+      if (file.type === "application/pdf") {
+        cvText = await extractFromPDF(file);
+      } else {
+        cvText = await extractFromDocument(file);
+      }
+
       const analysisResult = await analyzeCV(cvText, requiredPosition);
 
       setAnalysis(analysisResult);

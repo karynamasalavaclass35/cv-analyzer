@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { extractFromPDF } from "../utils";
+import { extractFromPDF, processTextStreaming } from "@/app/utils";
 
 export default function FileUpload() {
-  const [prompt, setPrompt] = useState("");
+  const [requiredPosition, setRequiredPosition] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
 
-  const analyzeCV = async (cvText: string, prompt: string): Promise<string> => {
-    const promptText = `Please analyze the CV, here is the text from it: ${cvText} and determine if it matches the following job description: ${prompt}. Please provide detailed feedback.`;
-
+  const analyzeCV = async (
+    cvText: string,
+    requiredPosition: string
+  ): Promise<string> => {
     try {
       const response = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
@@ -20,14 +21,8 @@ export default function FileUpload() {
         },
         body: JSON.stringify({
           model: "deepseek-r1",
-          prompt: promptText,
-          stream: false, // to get a complete response
-          messages: [
-            {
-              role: "user",
-              content: promptText,
-            },
-          ],
+          prompt: `Please analyze the CV: ${cvText} and determine if it fits the position and its requirements: ${requiredPosition}. Please provide detailed feedback.`,
+          stream: true,
         }),
       });
 
@@ -36,9 +31,7 @@ export default function FileUpload() {
         throw new Error(errorData.message || "Failed to analyze CV");
       }
 
-      const result = await response.json();
-
-      return result.response;
+      return await processTextStreaming(response, setAnalysis);
     } catch (error) {
       console.error("Error analyzing CV:", error);
       throw error;
@@ -51,21 +44,24 @@ export default function FileUpload() {
 
     try {
       setLoading(true);
+      setAnalysis("");
+
       const cvText = await extractFromPDF(file);
-      const analysisResult = await analyzeCV(cvText, prompt);
+      const analysisResult = await analyzeCV(cvText, requiredPosition);
+
       setAnalysis(analysisResult);
     } catch (error) {
       console.error("Error:", error);
       alert(error instanceof Error ? error.message : "Failed to process CV");
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   };
 
   return (
     <div className="flex flex-col gap-4 w-full items-center">
       <form
-        className="p-10 bg-gray-100 rounded-lg w-1/2 flex flex-col gap-4"
+        className="p-10 bg-gray-100 rounded-lg w-full flex flex-col gap-4"
         onSubmit={handleSubmit}
       >
         <label
@@ -111,8 +107,8 @@ export default function FileUpload() {
         </label>
 
         <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          value={requiredPosition}
+          onChange={(e) => setRequiredPosition(e.target.value)}
           className="w-full h-40 border border-gray-300 text-sm rounded-lg p-2 resize-none focus:outline-none"
           placeholder="Enter the job description..."
         />
@@ -120,14 +116,14 @@ export default function FileUpload() {
         <button
           type="submit"
           className="self-end w-fit bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!file || !prompt || loading}
+          disabled={!file || !requiredPosition || loading}
         >
           {loading ? "Analyzing..." : "Upload CV"}
         </button>
       </form>
 
       {analysis && (
-        <div className="p-6 bg-white rounded-lg w-1/2">
+        <div className="p-6 bg-white rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Analysis Result</h2>
           <p className="whitespace-pre-wrap">{analysis}</p>
         </div>

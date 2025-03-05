@@ -9,7 +9,7 @@ import {
 
 export default function FileUpload() {
   const [requiredPosition, setRequiredPosition] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
 
@@ -45,7 +45,7 @@ export default function FileUpload() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (!file) return;
+    if (!files.length) return;
 
     try {
       setLoading(true);
@@ -53,10 +53,12 @@ export default function FileUpload() {
 
       let cvText = "";
 
-      if (file.type === "application/pdf") {
-        cvText = await extractFromPDF(file);
-      } else {
-        cvText = await extractFromDocument(file);
+      for (const file of files) {
+        if (file.type === "application/pdf") {
+          cvText += await extractFromPDF(file);
+        } else {
+          cvText += await extractFromDocument(file);
+        }
       }
 
       const analysisResult = await analyzeCV(cvText, requiredPosition);
@@ -71,7 +73,7 @@ export default function FileUpload() {
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full items-center">
+    <div className="flex flex-col gap-4 w-full">
       <form
         className="p-10 bg-gray-100 rounded-lg w-full flex flex-col gap-4"
         onSubmit={handleSubmit}
@@ -103,9 +105,11 @@ export default function FileUpload() {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               PDF, DOC, DOCX
             </p>
-            {file && (
+            {files.length > 0 && (
               <p className="mt-2 text-sm text-blue-500 font-medium">
-                Selected: {file.name}
+                {files.length === 1
+                  ? `Selected ${files[0].name}`
+                  : `${files.length} files selected`}
               </p>
             )}
           </div>
@@ -114,7 +118,11 @@ export default function FileUpload() {
             type="file"
             className="hidden"
             accept=".pdf,.doc,.docx"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            multiple
+            onChange={(e) => {
+              const newFiles = e.target.files ?? [];
+              setFiles((files) => [...files, ...newFiles]);
+            }}
           />
         </label>
 
@@ -128,7 +136,7 @@ export default function FileUpload() {
         <button
           type="submit"
           className="self-end w-fit bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!file || !requiredPosition || loading}
+          disabled={!files.length || !requiredPosition || loading}
         >
           {loading ? "Analyzing..." : "Upload CV"}
         </button>

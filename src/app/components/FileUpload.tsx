@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import {
-  extractFromDocument,
-  extractFromPDF,
+  parseDocumentToString,
+  parsePdfToString,
   processTextStreaming,
 } from "@/app/utils";
 
@@ -55,9 +55,9 @@ export default function FileUpload() {
 
       for (const file of files) {
         if (file.type === "application/pdf") {
-          cvText += await extractFromPDF(file);
+          cvText += await parsePdfToString(file);
         } else {
-          cvText += await extractFromDocument(file);
+          cvText += await parseDocumentToString(file);
         }
       }
 

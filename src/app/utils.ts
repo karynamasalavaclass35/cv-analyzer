@@ -1,6 +1,8 @@
 import mammoth from "mammoth";
+import crypto from "crypto";
 import "pdfjs-dist/webpack";
 import * as pdfjs from "pdfjs-dist";
+import { type PutBlobResult } from "@vercel/blob";
 
 export const processTextStreaming = async (
   response: Response,
@@ -47,7 +49,7 @@ export const processTextStreaming = async (
   return fullResponse;
 };
 
-export const extractFromPDF = async (file: File): Promise<string> => {
+export const parsePdfToString = async (file: File): Promise<string> => {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjs.getDocument(arrayBuffer).promise;
@@ -66,7 +68,7 @@ export const extractFromPDF = async (file: File): Promise<string> => {
   }
 };
 
-export const extractFromDocument = async (file: File) => {
+export const parseDocumentToString = async (file: File) => {
   try {
     const data = await mammoth.extractRawText({
       arrayBuffer: await file.arrayBuffer(),
@@ -76,4 +78,32 @@ export const extractFromDocument = async (file: File) => {
     console.error("Error extracting text from document:", error);
     throw error;
   }
+};
+
+export const saveAnalysisToBlob = async (
+  fileContent: string
+): Promise<PutBlobResult> => {
+  const hash = crypto.createHash("sha256").update(fileContent).digest("hex");
+
+  const dataToUpload = JSON.stringify({
+    fileContent,
+    matchPercentage: "67%", // fixme: hardcoded for now
+    pros: ["Pro 1", "Pro 2"],
+    cons: ["Con 1", "Con 2"],
+    feedback: "Feedback 1",
+  });
+
+  const response = await fetch(`/api/analysis?fileHash=${hash}`, {
+    method: "POST",
+    body: dataToUpload,
+  });
+
+  return await response.json();
+};
+
+export const getBlobData = async () => {
+  const response = await fetch(`/api/analysis`, {
+    method: "GET",
+  });
+  return await response.json();
 };

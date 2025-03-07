@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import crypto from "crypto";
 import { PutBlobResult } from "@vercel/blob";
 
@@ -9,12 +9,23 @@ import {
   parseDocumentToString,
   parsePdfToString,
   saveAnalysisToBlob,
-} from "@/app/utils";
-import { Analysis, OllamaResponse } from "@/app/types";
+} from "@/app/components/helpers";
+import { Analysis, ExtendedPutBlobResult, OllamaResponse } from "@/app/types";
+import { AnalysisTable } from "@/app/components/AnalysisTable";
 
 export default function FileUpload() {
   const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [blobData, setBlobData] = useState<ExtendedPutBlobResult[]>([]);
+
+  const fetchBlobData = async () => {
+    const { data } = await getBlobData();
+    setBlobData(data);
+  };
+
+  useEffect(() => {
+    fetchBlobData();
+  }, []);
 
   const analyzeCV = async (
     cvText: string,
@@ -59,8 +70,7 @@ export default function FileUpload() {
             : await parseDocumentToString(file);
 
         const hash = crypto.createHash("sha256").update(cvText).digest("hex");
-        const { data } = await getBlobData();
-        const isFileAlreadyInBlob = !!data.find(
+        const isFileAlreadyInBlob = !!blobData.find(
           (item: PutBlobResult) => item.pathname === hash
         );
 
@@ -145,6 +155,16 @@ export default function FileUpload() {
           Upload CV
         </button>
       </form>
+
+      <div className="mt-20">
+        {blobData.length > 0 ? (
+          <AnalysisTable blobStorageData={blobData} />
+        ) : (
+          <div className="bg-gray-100 rounded-lg w-full h-40 flex items-center justify-center">
+            No analysis results
+          </div>
+        )}
+      </div>
     </div>
   );
 }

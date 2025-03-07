@@ -1,3 +1,5 @@
+import { PutBlobResult } from "@vercel/blob";
+
 export type OllamaResponse = {
   model: string;
   created_at: string;
@@ -18,3 +20,7 @@ export type Analysis = {
   fitPercentage: number;
   feedback: string;
 };
+
+export interface ExtendedPutBlobResult extends PutBlobResult {
+  analysis: Analysis;
+}

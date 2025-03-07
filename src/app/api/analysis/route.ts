@@ -9,6 +9,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (fileHash && request.body) {
       const blob = await put(fileHash, request.body, {
         access: "public",
+        contentType: "application/json",
       });
 
       return NextResponse.json(blob);
@@ -30,7 +31,20 @@ export async function POST(request: Request): Promise<NextResponse> {
 export async function GET(): Promise<NextResponse> {
   try {
     const { blobs } = await list();
-    return NextResponse.json(blobs);
+
+    if (!blobs.length) {
+      return NextResponse.json({ data: [] });
+    }
+
+    const blobDataArray = await Promise.all(
+      blobs.map(async (blob) => {
+        const response = await fetch(blob.downloadUrl);
+        const analysisData = await response.json();
+        return { ...blob, analysis: { ...analysisData } };
+      })
+    );
+
+    return NextResponse.json({ data: blobDataArray });
   } catch (error) {
     console.error("Error in GET request:", error);
     return NextResponse.json(

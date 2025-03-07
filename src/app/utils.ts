@@ -1,5 +1,4 @@
 import mammoth from "mammoth";
-import crypto from "crypto";
 import "pdfjs-dist/webpack";
 import * as pdfjs from "pdfjs-dist";
 import { type PutBlobResult } from "@vercel/blob";
@@ -81,10 +80,9 @@ export const parseDocumentToString = async (file: File) => {
 };
 
 export const saveAnalysisToBlob = async (
-  fileContent: string
+  fileContent: string,
+  hash: string
 ): Promise<PutBlobResult> => {
-  const hash = crypto.createHash("sha256").update(fileContent).digest("hex");
-
   const dataToUpload = JSON.stringify({
     fileContent,
     matchPercentage: "67%", // fixme: hardcoded for now

@@ -1,10 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import crypto from "crypto";
+import { PutBlobResult } from "@vercel/blob";
+
 import {
+  getBlobData,
   parseDocumentToString,
   parsePdfToString,
   processTextStreaming,
+  saveAnalysisToBlob,
 } from "@/app/utils";
 
 export default function FileUpload() {
@@ -61,9 +66,19 @@ export default function FileUpload() {
         }
       }
 
-      const analysisResult = await analyzeCV(cvText, requiredPosition);
+      const { data } = await getBlobData();
+      const hash = crypto.createHash("sha256").update(cvText).digest("hex");
+      const isFileAlreadyInBlob = !!data.find(
+        (item: PutBlobResult) => item.pathname === hash
+      );
 
-      setAnalysis(analysisResult);
+      if (!isFileAlreadyInBlob) {
+        saveAnalysisToBlob(cvText, hash);
+      }
+
+      // const analysisResult = await analyzeCV(cvText, requiredPosition);
+
+      // setAnalysis(analysisResult);
     } catch (error) {
       console.error("Error:", error);
       alert(error instanceof Error ? error.message : "Failed to process CV");

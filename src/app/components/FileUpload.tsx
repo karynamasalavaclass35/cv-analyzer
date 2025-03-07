@@ -8,20 +8,18 @@ import {
   getBlobData,
   parseDocumentToString,
   parsePdfToString,
-  processTextStreaming,
   saveAnalysisToBlob,
 } from "@/app/utils";
+import { Analysis, OllamaResponse } from "@/app/types";
 
 export default function FileUpload() {
   const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<string | null>(null);
 
   const analyzeCV = async (
     cvText: string,
     requiredPosition: string
-  ): Promise<string> => {
+  ): Promise<OllamaResponse> => {
     try {
       const response = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
@@ -29,9 +27,10 @@ export default function FileUpload() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "deepseek-r1",
-          prompt: `Please analyze the CV: ${cvText} and determine if it fits the position and its requirements: ${requiredPosition}. Please provide detailed feedback.`,
-          stream: true,
+          model: "llama3.2",
+          stream: false,
+          format: "json",
+          prompt: `Please analyze the CV content: "${cvText}". Determine if it fits the position and its requirements: "${requiredPosition}". Please provide a feedback consisting only of the following fields: pros, cons, fitPercentage and feedback`,
         }),
       });
 
@@ -40,7 +39,7 @@ export default function FileUpload() {
         throw new Error(errorData.message || "Failed to analyze CV");
       }
 
-      return await processTextStreaming(response, setAnalysis);
+      return await response.json();
     } catch (error) {
       console.error("Error analyzing CV:", error);
       throw error;
@@ -53,38 +52,28 @@ export default function FileUpload() {
     if (!files.length) return;
 
     try {
-      setLoading(true);
-      setAnalysis("");
+      files.forEach(async (file) => {
+        const cvText =
+          file.type === "application/pdf"
+            ? await parsePdfToString(file)
+            : await parseDocumentToString(file);
 
-      let cvText = "";
+        const hash = crypto.createHash("sha256").update(cvText).digest("hex");
+        const { data } = await getBlobData();
+        const isFileAlreadyInBlob = !!data.find(
+          (item: PutBlobResult) => item.pathname === hash
+        );
 
-      for (const file of files) {
-        if (file.type === "application/pdf") {
-          cvText += await parsePdfToString(file);
-        } else {
-          cvText += await parseDocumentToString(file);
+        if (!isFileAlreadyInBlob) {
+          const { response } = await analyzeCV(cvText, requiredPosition);
+          const parsedAnalysis: Analysis = JSON.parse(response);
+          saveAnalysisToBlob(parsedAnalysis, hash);
         }
-      }
-
-      const { data } = await getBlobData();
-      const hash = crypto.createHash("sha256").update(cvText).digest("hex");
-      const isFileAlreadyInBlob = !!data.find(
-        (item: PutBlobResult) => item.pathname === hash
-      );
-
-      if (!isFileAlreadyInBlob) {
-        saveAnalysisToBlob(cvText, hash);
-      }
-
-      // const analysisResult = await analyzeCV(cvText, requiredPosition);
-
-      // setAnalysis(analysisResult);
+      });
     } catch (error) {
       console.error("Error:", error);
       alert(error instanceof Error ? error.message : "Failed to process CV");
     }
-
-    setLoading(false);
   };
 
   return (
@@ -151,18 +140,11 @@ export default function FileUpload() {
         <button
           type="submit"
           className="self-end w-fit bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!files.length || !requiredPosition || loading}
+          disabled={!files.length || !requiredPosition}
         >
-          {loading ? "Analyzing..." : "Upload CV"}
+          Upload CV
         </button>
       </form>
-
-      {analysis && (
-        <div className="p-6 bg-white rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Analysis Result</h2>
-          <p className="whitespace-pre-wrap">{analysis}</p>
-        </div>
-      )}
     </div>
   );
 }

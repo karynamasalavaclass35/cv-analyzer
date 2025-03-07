@@ -2,6 +2,7 @@ import mammoth from "mammoth";
 import "pdfjs-dist/webpack";
 import * as pdfjs from "pdfjs-dist";
 import { type PutBlobResult } from "@vercel/blob";
+import { Analysis } from "@/app/types";
 
 export const processTextStreaming = async (
   response: Response,
@@ -80,20 +81,12 @@ export const parseDocumentToString = async (file: File) => {
 };
 
 export const saveAnalysisToBlob = async (
-  fileContent: string,
+  analysis: Analysis,
   hash: string
 ): Promise<PutBlobResult> => {
-  const dataToUpload = JSON.stringify({
-    fileContent,
-    matchPercentage: "67%", // fixme: hardcoded for now
-    pros: ["Pro 1", "Pro 2"],
-    cons: ["Con 1", "Con 2"],
-    feedback: "Feedback 1",
-  });
-
   const response = await fetch(`/api/analysis?fileHash=${hash}`, {
     method: "POST",
-    body: dataToUpload,
+    body: JSON.stringify(analysis),
   });
 
   return await response.json();

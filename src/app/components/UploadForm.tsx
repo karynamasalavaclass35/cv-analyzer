@@ -105,6 +105,12 @@ export function UploadForm({
     setFiles((files) => [...files, ...uniqueFiles]);
   };
 
+  const handleDeleteFile = (file: File) => {
+    setFiles((files) =>
+      files.filter(({ name, size }) => name !== file.name && size !== file.size)
+    );
+  };
+
   return (
     <form
       className="p-10 bg-white rounded-lg w-full flex flex-col gap-4"
@@ -144,7 +150,10 @@ export function UploadForm({
               <span className="text-indigo-900 max-w-50 truncate">
                 {file.name}
               </span>
-              <Trash2 className="text-indigo-950 hover:opacity-50 cursor-pointer" />
+              <Trash2
+                className="text-indigo-950 hover:opacity-50 cursor-pointer"
+                onClick={() => handleDeleteFile(file)}
+              />
             </Badge>
           </p>
         ))}

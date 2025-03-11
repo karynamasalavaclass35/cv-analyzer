@@ -3,7 +3,13 @@
 import { useState } from "react";
 import crypto from "crypto";
 import { PutBlobResult } from "@vercel/blob";
-import { FileUp, Trash2 } from "lucide-react";
+import {
+  CircleCheck,
+  CircleX,
+  FileUp,
+  LoaderCircle,
+  Trash2,
+} from "lucide-react";
 
 import { ExtendedPutBlobResult, OllamaResponse } from "@/app/types";
 import { parseDocumentToString, parsePdfToString } from "@/utils/parsers";
@@ -18,11 +24,17 @@ export function UploadForm({
 }) {
   const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [fileStatus, setFileStatus] = useState<{
+    [key: string]: "default" | "loading" | "error" | "done";
+  }>({});
 
   const analyzeCV = async (
     cvText: string,
-    requiredPosition: string
+    requiredPosition: string,
+    fileName: string
   ): Promise<OllamaResponse> => {
+    setFileStatus((prev) => ({ ...prev, [fileName]: "loading" }));
+
     try {
       const response = await fetch("http://localhost:11434/api/generate", {
         method: "POST",
@@ -39,12 +51,16 @@ export function UploadForm({
 
       if (!response.ok) {
         const errorData = await response.json();
+        setFileStatus((prev) => ({ ...prev, [fileName]: "error" }));
         throw new Error(errorData.message || "Failed to analyze CV");
       }
 
-      return await response.json();
+      const result = await response.json();
+      setFileStatus((prev) => ({ ...prev, [fileName]: "done" }));
+      return result;
     } catch (error) {
       console.error("Error analyzing CV:", error);
+      setFileStatus((prev) => ({ ...prev, [fileName]: "error" }));
       throw error;
     }
   };
@@ -55,7 +71,7 @@ export function UploadForm({
     if (!files.length) return;
 
     try {
-      files.forEach(async (file) => {
+      for (const file of files) {
         const cvText =
           file.type === "application/pdf"
             ? await parsePdfToString(file)
@@ -71,19 +87,25 @@ export function UploadForm({
             `File ${file.name} has already been analysed, check the database`
           );
         } else {
-          const { response } = await analyzeCV(cvText, requiredPosition);
+          const { response } = await analyzeCV(
+            cvText,
+            requiredPosition,
+            file.name
+          );
           const parsedAnalysis = JSON.parse(response);
 
+          // fixme: why is response returns {}?
           if (Object.keys(parsedAnalysis).length) {
             saveAnalysisToBlob(
               { fileName: file.name, ...parsedAnalysis },
               hash
             );
           } else {
+            // setFileStatus((prev) => ({ ...prev, [file.name]: "error" }));
             toast.error(`Failed to process CV: ${response.error}`);
           }
         }
-      });
+      }
     } catch (error) {
       console.error("Error:", error);
       alert(error instanceof Error ? error.message : "Failed to process CV");
@@ -156,10 +178,18 @@ export function UploadForm({
                 <span className="text-indigo-900 max-w-50 truncate">
                   {file.name}
                 </span>
-                <Trash2
-                  className="text-indigo-950 hover:text-red-800 cursor-pointer"
-                  onClick={() => handleDeleteFile(file)}
-                />
+                {fileStatus[file.name] === "loading" ? (
+                  <LoaderCircle className="animate-spin" />
+                ) : fileStatus[file.name] === "error" ? (
+                  <CircleX className="text-red-600" />
+                ) : fileStatus[file.name] === "done" ? (
+                  <CircleCheck className="text-green-600" />
+                ) : (
+                  <Trash2
+                    className="text-indigo-950 hover:text-red-800 cursor-pointer"
+                    onClick={() => handleDeleteFile(file)}
+                  />
+                )}
               </Badge>
             </p>
           ))}

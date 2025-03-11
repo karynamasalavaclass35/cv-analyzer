@@ -1,5 +1,7 @@
-import { put, list } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import { NextResponse } from "next/server";
+
+import { prepareBlobDataForUI } from "@/app/api/analysis/helpers";
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -30,25 +32,33 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const { blobs } = await list();
-
-    if (!blobs.length) {
-      return NextResponse.json({ data: [] });
-    }
-
-    const blobDataArray = await Promise.all(
-      blobs.map(async (blob) => {
-        const response = await fetch(blob.downloadUrl);
-        const analysisData = await response.json();
-        return { ...blob, analysis: { ...analysisData } };
-      })
-    );
-
-    return NextResponse.json({ data: blobDataArray });
+    return await prepareBlobDataForUI();
   } catch (error) {
     console.error("Error in GET request:", error);
     return NextResponse.json(
       { message: `Error occurred while fetching blob: ${error}` },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request): Promise<NextResponse> {
+  try {
+    const res = await request.json();
+
+    if (res.blobUrl) {
+      await del(res.blobUrl);
+      return await prepareBlobDataForUI();
+    }
+
+    return NextResponse.json(
+      { message: "No blob URL provided" },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error("Error in DELETE request:", error);
+    return NextResponse.json(
+      { message: `Error occurred during deletion: ${error}` },
       { status: 500 }
     );
   }

@@ -1,4 +1,5 @@
 import _ from "lodash";
+import { Trash2 } from "lucide-react";
 
 import {
   Table,
@@ -8,51 +9,72 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExtendedPutBlobResult } from "@/app/types";
+import { cn } from "@/lib/utils";
+import { deleteCVAnalysisData } from "@/utils/requests";
 
 type Props = {
   blobStorageData: ExtendedPutBlobResult[];
+  onSetBlobData: (blobData: ExtendedPutBlobResult[]) => void;
 };
 
-export function AnalysisTable({ blobStorageData }: Props) {
-  return (
-    <ScrollArea className="h-[700px]">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-slate-50 text-indigo-900">
-            {Object.keys(blobStorageData[0].analysis).map((column) => (
-              <TableHead key={column} className="w-1/4 text-indigo-800">
-                {_.startCase(column)}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
+export function AnalysisTable({ blobStorageData, onSetBlobData }: Props) {
+  const handleDeleteCvAnalysisItem = async (blobUrl: string) => {
+    const res = await deleteCVAnalysisData(blobUrl);
+    onSetBlobData(res.data);
+  };
 
-        <TableBody>
-          {blobStorageData.map((blob) => {
-            const analysis = blob.analysis;
-            const values = Object.values(analysis);
-            return (
-              <TableRow key={blob.pathname}>
-                {values.map((value: any, index: number) => (
-                  <TableCell key={index} className="w-1/4">
-                    {Array.isArray(value) ? (
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="text-indigo-900 w-full">
+          {Object.keys(blobStorageData[0].analysis).map((column, index) => (
+            <TableHead key={column} className={cn("text-indigo-800")}>
+              {_.startCase(column)}
+            </TableHead>
+          ))}
+          <TableHead key="head_actions" className={cn("text-indigo-800")} />
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {blobStorageData.map((blob) => {
+          const analysis = blob.analysis;
+          const values = Object.values(analysis);
+          return (
+            <TableRow key={blob.pathname} className="w-full">
+              {values.map((value: any, index: number) => (
+                <TableCell key={index}>
+                  {Array.isArray(value) ? (
+                    value.length > 0 ? (
                       <ol className="list-decimal list-inside">
-                        {value.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
+                        {value.map((item) =>
+                          typeof item === "string" ? (
+                            <li key={item}>{item}</li>
+                          ) : (
+                            "N/A"
+                          )
+                        )}
                       </ol>
                     ) : (
-                      value
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </ScrollArea>
+                      "N/A"
+                    )
+                  ) : (
+                    value ?? "N/A"
+                  )}
+                </TableCell>
+              ))}
+              <TableCell key="body_actions" className="text-center">
+                <Trash2
+                  size={16}
+                  className="cursor-pointer text-indigo-900 hover:text-red-800"
+                  onClick={() => handleDeleteCvAnalysisItem(blob.url)}
+                />
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getBlobData } from "@/app/helpers";
+import { getBlobData } from "@/utils/requests";
 import { ExtendedPutBlobResult } from "@/app/types";
 import { AnalysisTable } from "@/app/components/AnalysisTable";
 import { UploadForm } from "@/app/components/UploadForm";
@@ -32,7 +32,10 @@ export default function FileUpload() {
 
       <div className="mt-20">
         {blobData.length > 0 ? (
-          <AnalysisTable blobStorageData={blobData} />
+          <AnalysisTable
+            blobStorageData={blobData}
+            onSetBlobData={setBlobData}
+          />
         ) : (
           <NoResults />
         )}

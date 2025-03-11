@@ -1,8 +1,7 @@
 import mammoth from "mammoth";
 import "pdfjs-dist/webpack";
 import * as pdfjs from "pdfjs-dist";
-import { type PutBlobResult } from "@vercel/blob";
-import { Analysis } from "@/app/types";
+import { toast } from "@/components/ui/sonner";
 
 export const parsePdfToString = async (file: File): Promise<string> => {
   try {
@@ -18,7 +17,7 @@ export const parsePdfToString = async (file: File): Promise<string> => {
 
     return text;
   } catch (error) {
-    console.error("Error extracting text:", error);
+    toast.error(`Error extracting text from ${file.name} file`);
     throw error;
   }
 };
@@ -30,26 +29,7 @@ export const parseDocumentToString = async (file: File) => {
     });
     return data.value;
   } catch (error) {
-    console.error("Error extracting text from document:", error);
+    toast.error(`Error extracting text from ${file.name} file`);
     throw error;
   }
-};
-
-export const saveAnalysisToBlob = async (
-  analysis: Analysis,
-  hash: string
-): Promise<PutBlobResult> => {
-  const response = await fetch(`/api/analysis?fileHash=${hash}`, {
-    method: "POST",
-    body: JSON.stringify(analysis),
-  });
-
-  return await response.json();
-};
-
-export const getBlobData = async () => {
-  const response = await fetch(`/api/analysis`, {
-    method: "GET",
-  });
-  return await response.json();
 };

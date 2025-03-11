@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getBlobData } from "@/app/components/helpers";
+import { getBlobData } from "@/app/helpers";
 import { ExtendedPutBlobResult } from "@/app/types";
 import { AnalysisTable } from "@/app/components/AnalysisTable";
 import { UploadForm } from "@/app/components/UploadForm";

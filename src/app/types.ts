@@ -15,6 +15,7 @@ export type OllamaResponse = {
 };
 
 export type Analysis = {
+  fileName: string;
   pros: string[];
   cons: string[];
   fitPercentage: number;

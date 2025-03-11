@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import crypto from "crypto";
-import { Analysis, ExtendedPutBlobResult, OllamaResponse } from "@/app/types";
+import { PutBlobResult } from "@vercel/blob";
+
+import { ExtendedPutBlobResult, OllamaResponse } from "@/app/types";
 import {
   parseDocumentToString,
   parsePdfToString,
   saveAnalysisToBlob,
-} from "@/app/components/helpers";
-import { PutBlobResult } from "@vercel/blob";
+} from "@/app/helpers";
+import { toast } from "@/components/ui/sonner";
 
 export function UploadForm({
   blobData,
@@ -65,10 +67,14 @@ export function UploadForm({
           (item: PutBlobResult) => item.pathname === hash
         );
 
-        if (!isFileAlreadyInBlob) {
+        if (isFileAlreadyInBlob) {
+          toast.info(
+            `File ${file.name} has already been analysed, check the database`
+          );
+        } else {
           const { response } = await analyzeCV(cvText, requiredPosition);
-          const parsedAnalysis: Analysis = JSON.parse(response);
-          saveAnalysisToBlob(parsedAnalysis, hash);
+          const parsedAnalysis = JSON.parse(response);
+          saveAnalysisToBlob({ fileName: file.name, ...parsedAnalysis }, hash);
         }
       });
     } catch (error) {

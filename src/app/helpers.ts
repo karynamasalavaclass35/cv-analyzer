@@ -4,51 +4,6 @@ import * as pdfjs from "pdfjs-dist";
 import { type PutBlobResult } from "@vercel/blob";
 import { Analysis } from "@/app/types";
 
-export const processTextStreaming = async (
-  response: Response,
-  onSetAnalysis: (text: string) => void
-) => {
-  const reader = response.body?.getReader();
-
-  if (!reader) throw new Error("No reader available");
-
-  let fullResponse = "";
-  let streamComplete = false;
-  const decoder = new TextDecoder();
-
-  while (!streamComplete) {
-    const { done, value } = await reader.read();
-
-    if (done) {
-      streamComplete = true;
-      break;
-    }
-
-    const chunk = decoder.decode(value, { stream: true });
-    const lines = chunk.split("\n").filter((line) => line.trim() !== "");
-
-    let newResponse = "";
-
-    for (const line of lines) {
-      try {
-        const data = JSON.parse(line);
-        if (data.response) {
-          newResponse += data.response;
-        }
-      } catch (e) {
-        console.error("Error parsing chunk:", e);
-      }
-    }
-
-    if (newResponse) {
-      fullResponse += newResponse;
-      onSetAnalysis(fullResponse);
-    }
-  }
-
-  return fullResponse;
-};
-
 export const parsePdfToString = async (file: File): Promise<string> => {
   try {
     const arrayBuffer = await file.arrayBuffer();

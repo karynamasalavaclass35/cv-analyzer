@@ -19,11 +19,6 @@ type Props = {
 };
 
 export function AnalysisTable({ blobStorageData, onSetBlobData }: Props) {
-  const handleDeleteCvAnalysisItem = async (blobUrl: string) => {
-    const res = await deleteCVAnalysisData(blobUrl);
-    onSetBlobData(res.data);
-  };
-
   return (
     <Table>
       <TableHeader>
@@ -68,7 +63,9 @@ export function AnalysisTable({ blobStorageData, onSetBlobData }: Props) {
                 <Trash2
                   size={16}
                   className="cursor-pointer text-indigo-900 hover:text-red-800"
-                  onClick={() => handleDeleteCvAnalysisItem(blob.url)}
+                  onClick={async () =>
+                    await deleteCVAnalysisData(blob, onSetBlobData)
+                  }
                 />
               </TableCell>
             </TableRow>

@@ -3,19 +3,18 @@
 import { useState } from "react";
 import crypto from "crypto";
 import { PutBlobResult } from "@vercel/blob";
-import {
-  CircleCheck,
-  CircleX,
-  FileUp,
-  LoaderCircle,
-  Trash2,
-} from "lucide-react";
+import { FileUp } from "lucide-react";
 
-import { ExtendedPutBlobResult, OllamaResponse } from "@/app/types";
-import { parseDocumentToString, parsePdfToString } from "@/utils/parsers";
+import {
+  ExtendedPutBlobResult,
+  FileStatus,
+  FileStatusRecord,
+  OllamaResponse,
+} from "@/app/types";
+import { parseCvToString } from "@/utils/parsers";
 import { saveAnalysisToBlob } from "@/utils/requests";
 import { toast } from "@/components/ui/sonner";
-import { Badge } from "@/components/ui/badge";
+import { UploadedFileBadge } from "@/app/components/UploadedFileBadge";
 
 export function UploadForm({
   blobData,
@@ -24,11 +23,13 @@ export function UploadForm({
 }) {
   const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [fileStatus, setFileStatus] = useState<{
-    [key: string]: "default" | "loading" | "error" | "done";
-  }>({});
+  const [fileStatus, setFileStatus] = useState<FileStatusRecord>({});
 
-  const analyzeCV = async (
+  const isAnyFileLoading = files.some(
+    (file) => fileStatus[file.name] === "loading"
+  );
+
+  const validateCvAgainstPosition = async (
     cvText: string,
     requiredPosition: string,
     fileName: string
@@ -59,9 +60,51 @@ export function UploadForm({
       setFileStatus((prev) => ({ ...prev, [fileName]: "done" }));
       return result;
     } catch (error) {
-      console.error("Error analyzing CV:", error);
       setFileStatus((prev) => ({ ...prev, [fileName]: "error" }));
-      throw error;
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to analyze CV"
+      );
+    }
+  };
+
+  const runFileAnalysis = async (file: File): Promise<FileStatus> => {
+    const cvText = await parseCvToString(file);
+
+    if (!cvText) return "error";
+
+    const hash = crypto.createHash("sha256").update(cvText).digest("hex");
+    const isFileAlreadyInBlob = !!blobData.find(
+      (item: PutBlobResult) => item.pathname === hash
+    );
+
+    if (isFileAlreadyInBlob) {
+      toast.info(
+        `File ${file.name} has already been analysed, see the analysis in the table below`
+      );
+      return "done";
+    } else {
+      try {
+        const { response } = await validateCvAgainstPosition(
+          cvText,
+          requiredPosition,
+          file.name
+        );
+        const parsedAnalysis = JSON.parse(response);
+
+        if (!Object.keys(parsedAnalysis).length) {
+          throw new Error(`${file.name}: received empty analysis response`);
+        }
+
+        saveAnalysisToBlob({ fileName: file.name, ...parsedAnalysis }, hash);
+        return "done";
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : `Failed to analyze ${file.name}`
+        );
+        return "error";
+      }
     }
   };
 
@@ -71,45 +114,53 @@ export function UploadForm({
     if (!files.length) return;
 
     try {
+      const newFileStatus: FileStatusRecord = {};
+
       for (const file of files) {
-        const cvText =
-          file.type === "application/pdf"
-            ? await parsePdfToString(file)
-            : await parseDocumentToString(file);
+        const result = await runFileAnalysis(file);
+        newFileStatus[file.name] = result;
+      }
 
-        const hash = crypto.createHash("sha256").update(cvText).digest("hex");
-        const isFileAlreadyInBlob = !!blobData.find(
-          (item: PutBlobResult) => item.pathname === hash
-        );
+      setFileStatus(newFileStatus);
 
-        if (isFileAlreadyInBlob) {
-          toast.info(
-            `File ${file.name} has already been analysed, check the database`
-          );
-        } else {
-          const { response } = await analyzeCV(
-            cvText,
-            requiredPosition,
-            file.name
-          );
-          const parsedAnalysis = JSON.parse(response);
+      const allDone = Object.values(newFileStatus).every(
+        (status) => status === "done"
+      );
 
-          // fixme: why is response returns {}?
-          if (Object.keys(parsedAnalysis).length) {
-            saveAnalysisToBlob(
-              { fileName: file.name, ...parsedAnalysis },
-              hash
-            );
-          } else {
-            // setFileStatus((prev) => ({ ...prev, [file.name]: "error" }));
-            toast.error(`Failed to process CV: ${response.error}`);
-          }
-        }
+      if (allDone) {
+        toast.success("All files have been analysed");
+        resetForm();
+      } else {
+        filterFileBadges(newFileStatus);
       }
     } catch (error) {
-      console.error("Error:", error);
-      alert(error instanceof Error ? error.message : "Failed to process CV");
+      toast.error(
+        error instanceof Error
+          ? `Failed to process CV: ${error.message}`
+          : "Failed to process CV"
+      );
     }
+  };
+
+  const filterFileBadges = (newFileStatus: FileStatusRecord) => {
+    setFiles((files) =>
+      files.filter((file) => newFileStatus[file.name] !== "done")
+    );
+    setFileStatus((prev) => {
+      const newStatus = { ...prev };
+      for (const key in newStatus) {
+        if (newStatus[key] === "done") {
+          delete newStatus[key];
+        }
+      }
+      return newStatus;
+    });
+  };
+
+  const resetForm = () => {
+    setFiles([]);
+    setRequiredPosition("");
+    setFileStatus({});
   };
 
   const handleFileUploadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +183,7 @@ export function UploadForm({
     setFiles((files) => [...files, ...uniqueFiles]);
   };
 
-  const handleDeleteFile = (file: File) => {
+  const handleRemoveUploadedFile = (file: File) => {
     setFiles((files) =>
       files.filter(({ name, size }) => name !== file.name && size !== file.size)
     );
@@ -170,28 +221,13 @@ export function UploadForm({
 
         <div className="flex gap-2 w-full flex-wrap">
           {files.map((file) => (
-            <p
+            <UploadedFileBadge
               key={file.name + file.size}
-              className="text-sm flex items-center justify-center gap-2"
-            >
-              <Badge variant="secondary" className="flex gap-2">
-                <span className="text-indigo-900 max-w-50 truncate">
-                  {file.name}
-                </span>
-                {fileStatus[file.name] === "loading" ? (
-                  <LoaderCircle className="animate-spin" />
-                ) : fileStatus[file.name] === "error" ? (
-                  <CircleX className="text-red-600" />
-                ) : fileStatus[file.name] === "done" ? (
-                  <CircleCheck className="text-green-600" />
-                ) : (
-                  <Trash2
-                    className="text-indigo-950 hover:text-red-800 cursor-pointer"
-                    onClick={() => handleDeleteFile(file)}
-                  />
-                )}
-              </Badge>
-            </p>
+              file={file}
+              fileStatus={fileStatus}
+              onRemove={handleRemoveUploadedFile}
+              onRerunAnalysis={async () => await runFileAnalysis(file)}
+            />
           ))}
         </div>
 
@@ -205,9 +241,9 @@ export function UploadForm({
         <button
           type="submit"
           className="self-center w-fit bg-indigo-600 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!files.length || !requiredPosition}
+          disabled={!files.length || !requiredPosition || isAnyFileLoading}
         >
-          Analyse CV(s)
+          {isAnyFileLoading ? "Analysing..." : "Analyse CV(s)"}
         </button>
       </form>
     </div>

@@ -25,3 +25,6 @@ export type Analysis = {
 export interface ExtendedPutBlobResult extends PutBlobResult {
   analysis: Analysis;
 }
+
+export type FileStatus = "default" | "loading" | "error" | "done";
+export type FileStatusRecord = Record<string, FileStatus>;

@@ -1,35 +1,45 @@
 import mammoth from "mammoth";
 import "pdfjs-dist/webpack";
 import * as pdfjs from "pdfjs-dist";
+
 import { toast } from "@/components/ui/sonner";
 
-export const parsePdfToString = async (file: File): Promise<string> => {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjs.getDocument(arrayBuffer).promise;
-    let text = "";
+const parsePdfToString = async (file: File): Promise<string> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+  let text = "";
 
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map((item: any) => item.str).join(" ") + "\n";
-    }
-
-    return text;
-  } catch (error) {
-    toast.error(`Error extracting text from ${file.name} file`);
-    throw error;
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item: any) => item.str).join(" ") + "\n";
   }
+
+  return text;
 };
 
-export const parseDocumentToString = async (file: File) => {
+const parseDocumentToString = async (file: File) => {
+  const data = await mammoth.extractRawText({
+    arrayBuffer: await file.arrayBuffer(),
+  });
+  return data.value;
+};
+
+export const parseCvToString = async (file: File): Promise<string> => {
+  let cvText = "";
+
   try {
-    const data = await mammoth.extractRawText({
-      arrayBuffer: await file.arrayBuffer(),
-    });
-    return data.value;
+    cvText =
+      file.type === "application/pdf"
+        ? await parsePdfToString(file)
+        : await parseDocumentToString(file);
   } catch (error) {
-    toast.error(`Error extracting text from ${file.name} file`);
-    throw error;
+    toast.error(
+      error instanceof Error
+        ? `Failed to parse ${file.name}: ${error.message}`
+        : `Failed to parse ${file.name}`
+    );
   }
+
+  return cvText;
 };

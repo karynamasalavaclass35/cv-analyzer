@@ -9,67 +9,34 @@
 3. AI-powered analysis of CV fit for the specified position
 4. Clear and structured output with percentage fit score
 
-## Getting Started
+## Dockerization
 
-1. [Install Ollama](#install-ollama)
-2. [Pull the DeepSeek-R1 Model](#pull-the-deepseek-r1-model)
-3. [Run Frontend Application](#run-frontend-application)
+This application is containerized using Docker. It consists of two main services:
 
-## Install Ollama
+1. **Ollama Service:**
 
-First, download and install Ollama from the official [website](https://ollama.com/download). Once the download is complete, install the Ollama application like you would do for any other application.
+   - The `ollama/ollama` [docker image](https://hub.docker.com/r/ollama/ollama) runs in its own container, providing the AI model for CV analysis.
 
-Once the installation completes, confirm that Ollama is installed by checking its version:
+2. **Frontend Application:**
+   - The frontend application runs in a separate container, allowing users to interact with the CV Analyzer through a web interface.
 
-```
-ollama --version
-```
+### Running the Application with Docker
 
-When you run Ollama application, Ollama binds to the local address 127.0.0.1 on port 11434 by default (http://localhost:11434). You can change the bind address using the **OLLAMA_HOST** environment variable, see p.2 in useful links below.
+To run the application using Docker, follow these steps:
 
-#### Useful links:
+1. **Build and Start the Containers:**
+   Make sure you have Docker and Docker Compose installed. Then, run the following command in the root directory of the project:
 
-1. [Language models that Ollama supports](https://ollama.com/library)
-2. [Ollama Port Configuration Guide](https://www.restack.io/p/ollama-answer-port-configuration-cat-ai)
-3. [Ollama API](https://github.com/ollama/ollama/blob/main/docs/api.md)
+   ```bash
+   docker-compose up --build
+   ```
 
-## Pull the DeepSeek-R1 Model
+2. **Access the Application:**
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Once Ollama is installed, you can run DeepSeek R1 models. You can download both the 1.5B and 7B versions using the Ollama CLI:
+### Local Development
 
-```
-ollama pull deepseek-r1
-ollama pull deepseek-r1:7b
-```
-
-This command fetches the model from the official Ollama repository and stores it locally.
-
-> Note: DeepSeek-R1 7B version is significantly more powerful but requires more RAM and CPU resources.
-
-To confirm that the model was downloaded successfully, run:
-
-```
-ollama list
-```
-
-It will show all the models that you have downloaded using Ollama.
-
-> #### Where are models stored?
->
-> - macOS: `~/.ollama/models`
-> - Linux: `/usr/share/ollama/.ollama/models`
-> - Windows: `C:\Users\%username%\.ollama\models`
-
-Since the models are downloaded, you can run them locally with Ollama. You can start each model using the following commands:
-
-```
-ollama run deepseek-r1
-ollama run deepseek-r1:7b
-```
-
-Once started, the model will run locally, and you can interact with it via the command line. But we're also using DeepSeek model in this application.
-
-## Run Frontend Application
+If you prefer to run the application locally without Docker, you can do so by following these steps:
 
 First, install the dependencies:
 

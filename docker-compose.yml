@@ -1,0 +1,26 @@
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama/ollama:/root/.ollama
+      - ./scripts/entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    command: |
+      chmod +x /entrypoint.sh &&
+      /entrypoint.sh
+
+  frontend:
+    image: node:22-alpine
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/src/app
+      - /src/app/node_modules
+    working_dir: /src/app
+    command: sh -c "npm install && npm run dev"
+    env_file:
+      - .env.local
+    depends_on:
+      - ollama

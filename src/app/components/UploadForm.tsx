@@ -31,11 +31,8 @@ export function UploadForm({
 
   const validateCvAgainstPosition = async (
     cvText: string,
-    requiredPosition: string,
-    fileName: string
+    requiredPosition: string
   ): Promise<OllamaResponse> => {
-    setFileStatus((prev) => ({ ...prev, [fileName]: "loading" }));
-
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/generate`,
@@ -55,15 +52,11 @@ export function UploadForm({
 
       if (!response.ok) {
         const errorData = await response.json();
-        setFileStatus((prev) => ({ ...prev, [fileName]: "error" }));
         throw new Error(errorData.message || "Failed to analyze CV");
       }
 
-      const result = await response.json();
-      setFileStatus((prev) => ({ ...prev, [fileName]: "done" }));
-      return result;
+      return await response.json();
     } catch (error) {
-      setFileStatus((prev) => ({ ...prev, [fileName]: "error" }));
       throw new Error(
         error instanceof Error ? error.message : "Failed to analyze CV"
       );
@@ -89,8 +82,7 @@ export function UploadForm({
       try {
         const { response } = await validateCvAgainstPosition(
           cvText,
-          requiredPosition,
-          file.name
+          requiredPosition
         );
         const parsedAnalysis = JSON.parse(response);
 
@@ -120,11 +112,11 @@ export function UploadForm({
       const newFileStatus: FileStatusRecord = {};
 
       for (const file of files) {
-        const result = await runFileAnalysis(file);
-        newFileStatus[file.name] = result;
+        newFileStatus[file.name] = "loading";
+        setFileStatus(newFileStatus);
+        newFileStatus[file.name] = await runFileAnalysis(file);
+        setFileStatus(newFileStatus);
       }
-
-      setFileStatus(newFileStatus);
 
       const allDone = Object.values(newFileStatus).every(
         (status) => status === "done"
@@ -133,9 +125,9 @@ export function UploadForm({
       if (allDone) {
         toast.success("All files have been analysed");
         resetForm();
-      } else {
-        filterFileBadges(newFileStatus);
       }
+
+      filterFileBadges(newFileStatus);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -192,6 +184,12 @@ export function UploadForm({
     );
   };
 
+  const handleRerunAnalysis = async (file: File) => {
+    setFileStatus((prev) => ({ ...prev, [file.name]: "loading" }));
+    const status = await runFileAnalysis(file);
+    setFileStatus((prev) => ({ ...prev, [file.name]: status }));
+  };
+
   return (
     <div className="flex justify-center">
       <form
@@ -229,7 +227,7 @@ export function UploadForm({
               file={file}
               fileStatus={fileStatus}
               onRemove={handleRemoveUploadedFile}
-              onRerunAnalysis={async () => await runFileAnalysis(file)}
+              onRerunAnalysis={handleRerunAnalysis}
             />
           ))}
         </div>

@@ -15,6 +15,10 @@ import { parseCvToString } from "@/utils/parsers";
 import { saveAnalysisToBlob } from "@/utils/requests";
 import { toast } from "@/components/ui/sonner";
 import { UploadedFileBadge } from "@/app/components/UploadedFileBadge";
+import {
+  LeftSideBackground,
+  RightSideBackground,
+} from "@/app/components/FormBackground";
 
 type Props = {
   blobData: ExtendedPutBlobResult[];
@@ -198,9 +202,11 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
   };
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center relative">
+      <LeftSideBackground />
+
       <form
-        className="p-10 bg-white rounded-lg w-full flex flex-col gap-4 xl:w-1/2"
+        className="p-10 bg-white rounded-lg w-full flex flex-col gap-4 xl:w-1/2 shadow-md relative z-10"
         onSubmit={handleSubmit}
       >
         <label
@@ -254,6 +260,8 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
           {isAnyFileLoading ? "Analysing..." : "Analyse CV(s)"}
         </button>
       </form>
+
+      <RightSideBackground />
     </div>
   );
 }

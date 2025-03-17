@@ -3,17 +3,19 @@
 import { useState, useEffect } from "react";
 
 import { AnalysisTable } from "@/app/components/AnalysisTable";
-import { NoResults } from "@/app/components/NoResults";
 import { UploadForm } from "@/app/components/UploadForm";
 import { ExtendedPutBlobResult } from "@/app/types";
 import { getBlobData } from "@/utils/requests";
 
 export default function Home() {
   const [blobData, setBlobData] = useState<ExtendedPutBlobResult[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const fetchBlobData = async () => {
+    setLoading(true);
     const { data } = await getBlobData();
     setBlobData(data);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -27,14 +29,11 @@ export default function Home() {
           <UploadForm blobData={blobData} onFetchBlobData={fetchBlobData} />
 
           <div className="mt-20">
-            {blobData.length > 0 ? (
-              <AnalysisTable
-                blobStorageData={blobData}
-                onSetBlobData={setBlobData}
-              />
-            ) : (
-              <NoResults />
-            )}
+            <AnalysisTable
+              blobStorageData={blobData}
+              onSetBlobData={setBlobData}
+              loading={loading}
+            />
           </div>
         </div>
       </main>

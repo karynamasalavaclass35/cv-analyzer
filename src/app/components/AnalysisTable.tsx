@@ -12,13 +12,23 @@ import {
 import { ExtendedPutBlobResult } from "@/app/types";
 import { cn } from "@/lib/utils";
 import { deleteCVAnalysisData } from "@/utils/requests";
+import { NoResults } from "@/app/components/NoResults";
+import { Loading } from "@/app/components/Loading";
 
 type Props = {
   blobStorageData: ExtendedPutBlobResult[];
   onSetBlobData: (blobData: ExtendedPutBlobResult[]) => void;
+  loading: boolean;
 };
 
-export function AnalysisTable({ blobStorageData, onSetBlobData }: Props) {
+export function AnalysisTable({
+  blobStorageData,
+  onSetBlobData,
+  loading,
+}: Props) {
+  if (loading) return <Loading />;
+  if (!blobStorageData.length) return <NoResults />;
+
   return (
     <Table>
       <TableHeader>

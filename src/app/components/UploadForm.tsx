@@ -16,11 +16,12 @@ import { saveAnalysisToBlob } from "@/utils/requests";
 import { toast } from "@/components/ui/sonner";
 import { UploadedFileBadge } from "@/app/components/UploadedFileBadge";
 
-export function UploadForm({
-  blobData,
-}: {
+type Props = {
   blobData: ExtendedPutBlobResult[];
-}) {
+  onFetchBlobData: () => void;
+};
+
+export function UploadForm({ blobData, onFetchBlobData }: Props) {
   const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [fileStatus, setFileStatus] = useState<FileStatusRecord>({});
@@ -90,7 +91,13 @@ export function UploadForm({
           throw new Error(`${file.name}: received empty analysis response`);
         }
 
-        saveAnalysisToBlob({ fileName: file.name, ...parsedAnalysis }, hash);
+        await saveAnalysisToBlob(
+          { fileName: file.name, ...parsedAnalysis },
+          hash
+        );
+
+        onFetchBlobData();
+
         return "done";
       } catch (error) {
         toast.error(

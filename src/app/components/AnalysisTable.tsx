@@ -9,8 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ExtendedPutBlobResult } from "@/app/types";
-import { cn } from "@/lib/utils";
+import { Analysis, ExtendedPutBlobResult } from "@/app/types";
 import { deleteCVAnalysisData } from "@/utils/requests";
 import { NoResults } from "@/app/components/NoResults";
 import { Loading } from "@/app/components/Loading";
@@ -20,6 +19,14 @@ type Props = {
   onSetBlobData: (blobData: ExtendedPutBlobResult[]) => void;
   loading: boolean;
 };
+
+const columns: (keyof Analysis)[] = [
+  "fileName",
+  "pros",
+  "cons",
+  "fitPercentage",
+  "feedback",
+];
 
 export function AnalysisTable({
   blobStorageData,
@@ -33,39 +40,35 @@ export function AnalysisTable({
     <Table>
       <TableHeader>
         <TableRow className="text-indigo-900 w-full">
-          {Object.keys(blobStorageData[0].analysis).map((column, index) => (
-            <TableHead key={column} className={cn("text-indigo-800")}>
+          {columns.map((column) => (
+            <TableHead key={column} className="text-indigo-800">
               {_.startCase(column)}
             </TableHead>
           ))}
-          <TableHead key="head_actions" className={cn("text-indigo-800")} />
+          <TableHead key="head_actions" className="text-indigo-800" />
         </TableRow>
       </TableHeader>
 
       <TableBody>
         {blobStorageData.map((blob) => {
-          const analysis = blob.analysis;
-          const values = Object.values(analysis);
+          const { analysis, pathname } = blob;
           return (
-            <TableRow key={blob.pathname} className="w-full">
-              {values.map((value: any, index: number) => (
-                <TableCell key={index}>
-                  {Array.isArray(value) ? (
-                    value.length > 0 ? (
+            <TableRow key={pathname} className="w-full">
+              {columns.map((column) => (
+                <TableCell key={column}>
+                  {Array.isArray(analysis[column]) ? (
+                    analysis[column].length > 0 ? (
                       <ol className="list-decimal list-inside">
-                        {value.map((item) =>
-                          typeof item === "string" ? (
-                            <li key={item}>{item}</li>
-                          ) : (
-                            "N/A"
-                          )
-                        )}
+                        {analysis[column].map((item) => {
+                          if (typeof item !== "string") return "N/A";
+                          return <li key={item}>{item}</li>;
+                        })}
                       </ol>
                     ) : (
                       "N/A"
                     )
                   ) : (
-                    value ?? "N/A"
+                    analysis[column] ?? "N/A"
                   )}
                 </TableCell>
               ))}

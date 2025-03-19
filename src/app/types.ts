@@ -28,3 +28,9 @@ export interface ExtendedPutBlobResult extends PutBlobResult {
 
 export type FileStatus = "loading" | "error" | "done";
 export type FileStatusRecord = Record<string, FileStatus>;
+
+export type Prompt = {
+  id: string;
+  name: string;
+  description: string;
+};

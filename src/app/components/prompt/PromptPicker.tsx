@@ -1,62 +1,45 @@
 "use client";
 
 import { Combobox } from "@/components/custom/combobox";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CreatePromptModal } from "./CreatePromptModal";
 import { Label } from "@/components/ui/label";
-
-const prompts = [
-  {
-    value: "react developer",
-    label: "React developer",
-    description: "You are a react developer",
-  },
-  {
-    value: "angular developer",
-    label: "Angular developer",
-    description: "You are a angular developer",
-  },
-  {
-    value: "vue developer",
-    label: "Vue developer",
-    description: "You are a vue developer",
-  },
-  {
-    value: "backend developer",
-    label: "Backend developer",
-    description:
-      "You are a backend developer You are a backend developer You are a backend developer You are a backend developer You are a backend developer You are a backend developer You are a backend developer You are a backend developer You are a backend developer",
-  },
-];
+import { Prompt } from "@/app/types";
+import { toast } from "sonner";
 
 export function PromptPicker() {
-  // const [prompts, setPrompts] = useState([]);
-  const [role, setRole] = useState(prompts?.[0]?.value ?? "");
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [role, setRole] = useState("");
 
-  // const getPrompts = async () => {
-  //   const response = await fetch(`/api/redis?key=prompts`, { method: "GET" });
+  const mappedPrompts = useMemo(
+    () =>
+      prompts.map((prompt) => ({
+        value: prompt.name.toLowerCase(),
+        label: prompt.name,
+        description: prompt.description,
+      })),
+    [prompts]
+  );
 
-  //   if (response.ok) {
-  //     setPrompts(await response.json());
-  //   } else {
-  //     const error = await response.json();
-  //     console.error("Error fetching data from Redis:", error);
-  //   }
-  // };
-
-  console.log("prompts", prompts);
-
-  const description = prompts.find(
+  const description = mappedPrompts.find(
     (prompt) => prompt.value === role
   )?.description;
 
-  // todo:
-  // useEffect(() => {
-  //   getPrompts();
-  // }, []);
+  useEffect(() => {
+    getPrompts();
+  }, []);
 
-  const handleOpenCreationModal = () => {
-    console.log("add");
+  const getPrompts = async () => {
+    const response = await fetch(`/api/prompts`, { method: "GET" });
+
+    if (response.ok) {
+      const result = await response.json();
+      setPrompts(result);
+      setRole(result?.[0]?.name.toLowerCase() ?? "");
+    } else {
+      const error = await response.json();
+      toast.error("Error fetching data from Redis:", error);
+    }
   };
 
   return (
@@ -68,8 +51,8 @@ export function PromptPicker() {
         id="role"
         value={role}
         onSetValue={setRole}
-        options={prompts}
-        noResultsContent={<CreatePromptModal />}
+        options={mappedPrompts}
+        noResultsContent={<CreatePromptModal onSetPrompts={setPrompts} />}
       />
       {role && <textarea value={description} disabled />}
     </div>

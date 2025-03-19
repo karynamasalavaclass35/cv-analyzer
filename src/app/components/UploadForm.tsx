@@ -19,6 +19,7 @@ import {
   LeftSideBackground,
   RightSideBackground,
 } from "@/app/components/FormBackground";
+import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 
 type Props = {
   blobData: ExtendedPutBlobResult[];
@@ -211,7 +212,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
       >
         <label
           htmlFor="dropzone-file"
-          className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+          className="flex flex-col items-center justify-center w-full border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
         >
           <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 gap-2">
             <FileUp size={32} className="text-gray-500" />
@@ -245,10 +246,12 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
           ))}
         </div>
 
+        <PromptPicker />
+
         <textarea
           value={requiredPosition}
           onChange={(e) => setRequiredPosition(e.target.value)}
-          className="w-full h-40 border border-gray-300 text-sm rounded-lg p-2 resize-none focus:outline-none"
+          className="w-full h-40"
           placeholder="Enter the job description..."
         />
 
@@ -257,7 +260,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
           className="self-center w-fit bg-indigo-600 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!files.length || !requiredPosition || isAnyFileLoading}
         >
-          {isAnyFileLoading ? "Analysing..." : "Analyse CV(s)"}
+          {isAnyFileLoading ? "Analysing..." : "Analyse"}
         </button>
       </form>
 

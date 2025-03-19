@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Analysis, ExtendedPutBlobResult } from "@/app/types";
-import { deleteCVAnalysisData } from "@/utils/requests";
+import { deleteCVAnalysisData } from "@/utils/blobRequests";
 import { NoResults } from "@/app/components/NoResults";
 import { Loading } from "@/app/components/Loading";
 

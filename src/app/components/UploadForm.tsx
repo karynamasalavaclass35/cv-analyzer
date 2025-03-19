@@ -12,7 +12,7 @@ import {
   OllamaResponse,
 } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
-import { saveAnalysisToBlob } from "@/utils/requests";
+import { saveAnalysisToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
 import { UploadedFileBadge } from "@/app/components/UploadedFileBadge";
 import {

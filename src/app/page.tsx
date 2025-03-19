@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { AnalysisTable } from "@/app/components/AnalysisTable";
 import { UploadForm } from "@/app/components/UploadForm";
 import { ExtendedPutBlobResult } from "@/app/types";
-import { getBlobData } from "@/utils/requests";
+import { getBlobData } from "@/utils/blobRequests";
 
 export default function Home() {
   const [blobData, setBlobData] = useState<ExtendedPutBlobResult[]>([]);

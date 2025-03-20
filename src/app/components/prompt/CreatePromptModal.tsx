@@ -16,20 +16,42 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
-import { Prompt } from "@/app/types";
+import { Prompt, FormErrors } from "@/app/components/prompt/types";
+import {
+  validateDescription,
+  validateName,
+} from "@/app/components/prompt/validation";
 
 type Props = {
+  prompts: Prompt[];
   onSetPrompts: (prompts: Prompt[]) => void;
 };
 
-export const CreatePromptModal = ({ onSetPrompts }: Props) => {
+export const CreatePromptModal = ({ prompts, onSetPrompts }: Props) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+
+  const isFormValid =
+    formErrors.name === undefined &&
+    formErrors.description === undefined &&
+    Object.keys(formErrors).length !== 0;
 
   const handleCreatePrompt = async () => {
+    setFormErrors({});
+
+    const nameError = validateName(name, prompts);
+    const descriptionError = validateDescription(description);
+
+    if (nameError || descriptionError) {
+      setFormErrors({ name: nameError, description: descriptionError });
+      return;
+    }
+
     setIsLoading(true);
+
     const response = await fetch("/api/prompts", {
       method: "POST",
       headers: {
@@ -61,6 +83,7 @@ export const CreatePromptModal = ({ onSetPrompts }: Props) => {
   const resetForm = () => {
     setName("");
     setDescription("");
+    setFormErrors({});
   };
 
   return (
@@ -86,30 +109,53 @@ export const CreatePromptModal = ({ onSetPrompts }: Props) => {
         </DialogHeader>
 
         <form
-          className="flex flex-col gap-4 mt-4"
+          className="flex flex-col mt-4 space-y-4"
           onSubmit={handleCreatePrompt}
         >
-          <Label htmlFor="name">
-            Name<span className="text-red-500">*</span>
-          </Label>
-          <Input
-            required
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="name">
+              Name
+              <RequiredFieldIndicator />
+            </Label>
+            <Input
+              required
+              id="name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setFormErrors((prev) => ({
+                  ...prev,
+                  name: validateName(e.target.value, prompts),
+                }));
+              }}
+            />
+            {formErrors.name && <ErrorMessage message={formErrors.name} />}
+          </div>
 
-          <Label htmlFor="description">
-            Description<span className="text-red-500">*</span>
-          </Label>
-          <textarea
-            required
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="description">
+              Description
+              <RequiredFieldIndicator />
+            </Label>
+            <textarea
+              required
+              id="description"
+              className="w-full"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setFormErrors((prev) => ({
+                  ...prev,
+                  description: validateDescription(e.target.value),
+                }));
+              }}
+            />
+            {formErrors.description && (
+              <ErrorMessage message={formErrors.description} />
+            )}
+          </div>
 
-          <Button type="submit" disabled={!name || !description || isLoading}>
+          <Button type="submit" disabled={!isFormValid || isLoading}>
             {isLoading ? "Creating..." : "Create"}
           </Button>
         </form>
@@ -117,3 +163,9 @@ export const CreatePromptModal = ({ onSetPrompts }: Props) => {
     </Dialog>
   );
 };
+
+const RequiredFieldIndicator = () => <span className="text-red-500">*</span>;
+
+const ErrorMessage = ({ message }: { message: string }) => (
+  <p className="text-sm text-red-500">{message}</p>
+);

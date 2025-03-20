@@ -1,11 +1,12 @@
 "use client";
 
-import { Combobox } from "@/components/custom/combobox";
 import { useEffect, useMemo, useState } from "react";
-import { CreatePromptModal } from "./CreatePromptModal";
+
+import { Combobox } from "@/components/custom/combobox";
 import { Label } from "@/components/ui/label";
-import { Prompt } from "@/app/types";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
+import { CreatePromptModal } from "@/app/components/prompt/CreatePromptModal";
+import { Prompt } from "@/app/components/prompt/types";
 
 type Props = {
   prompt?: Prompt;
@@ -69,7 +70,9 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
         value={prompt?.name ?? ""}
         onSetValue={handleSetNewPrompt}
         options={mappedPrompts}
-        noResultsContent={<CreatePromptModal onSetPrompts={setPrompts} />}
+        noResultsContent={
+          <CreatePromptModal prompts={prompts} onSetPrompts={setPrompts} />
+        }
       />
       {!!prompt && <textarea value={prompt.description} disabled />}
     </div>

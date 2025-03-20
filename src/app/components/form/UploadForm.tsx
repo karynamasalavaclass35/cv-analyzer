@@ -10,7 +10,6 @@ import {
   FileStatus,
   FileStatusRecord,
   OllamaResponse,
-  Prompt,
 } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
 import { saveAnalysisToBlob } from "@/utils/blobRequests";
@@ -21,6 +20,7 @@ import {
   RightSideBackground,
 } from "@/app/components/form/FormBackground";
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
+import { Prompt } from "@/app/components/prompt/types";
 
 type Props = {
   blobData: ExtendedPutBlobResult[];

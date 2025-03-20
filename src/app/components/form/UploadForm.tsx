@@ -14,11 +14,11 @@ import {
 import { parseCvToString } from "@/utils/parsers";
 import { saveAnalysisToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
-import { UploadedFileBadge } from "@/app/components/UploadedFileBadge";
+import { UploadedFileBadge } from "@/app/components/form/UploadedFileBadge";
 import {
   LeftSideBackground,
   RightSideBackground,
-} from "@/app/components/FormBackground";
+} from "@/app/components/form/FormBackground";
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 
 type Props = {

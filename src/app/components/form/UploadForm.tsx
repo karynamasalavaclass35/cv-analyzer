@@ -10,6 +10,7 @@ import {
   FileStatus,
   FileStatusRecord,
   OllamaResponse,
+  Prompt,
 } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
 import { saveAnalysisToBlob } from "@/utils/blobRequests";
@@ -27,9 +28,9 @@ type Props = {
 };
 
 export function UploadForm({ blobData, onFetchBlobData }: Props) {
-  const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [fileStatus, setFileStatus] = useState<FileStatusRecord>({});
+  const [prompt, setPrompt] = useState<Prompt>();
 
   const isAnyFileLoading = files.some(
     (file) => fileStatus[file.name] === "loading"
@@ -88,7 +89,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
       try {
         const { response } = await validateCvAgainstPosition(
           cvText,
-          requiredPosition
+          `${prompt?.name}: ${prompt?.description}`
         );
         const parsedAnalysis = JSON.parse(response);
 
@@ -166,7 +167,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
 
   const resetForm = () => {
     setFiles([]);
-    setRequiredPosition("");
+    setPrompt(undefined);
     setFileStatus({});
   };
 
@@ -246,19 +247,12 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
           ))}
         </div>
 
-        <PromptPicker />
-
-        <textarea
-          value={requiredPosition}
-          onChange={(e) => setRequiredPosition(e.target.value)}
-          className="w-full h-40"
-          placeholder="Enter the job description..."
-        />
+        <PromptPicker prompt={prompt} onSetPrompt={setPrompt} />
 
         <button
           type="submit"
           className="self-center w-fit bg-indigo-600 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!files.length || !requiredPosition || isAnyFileLoading}
+          disabled={!files.length || prompt === undefined || isAnyFileLoading}
         >
           {isAnyFileLoading ? "Analysing..." : "Analyse"}
         </button>

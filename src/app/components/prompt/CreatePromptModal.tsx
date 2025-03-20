@@ -18,11 +18,11 @@ import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Prompt } from "@/app/types";
 
-export const CreatePromptModal = ({
-  onSetPrompts,
-}: {
+type Props = {
   onSetPrompts: (prompts: Prompt[]) => void;
-}) => {
+};
+
+export const CreatePromptModal = ({ onSetPrompts }: Props) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -42,8 +42,7 @@ export const CreatePromptModal = ({
       const { prompts } = await response.json();
       onSetPrompts(prompts);
 
-      setName("");
-      setDescription("");
+      resetForm();
       setOpen(false);
     } else {
       toast.error("Error creating prompt");
@@ -52,8 +51,20 @@ export const CreatePromptModal = ({
     setIsLoading(false);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      resetForm();
+    }
+    setOpen(open);
+  };
+
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"

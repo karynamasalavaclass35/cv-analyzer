@@ -7,23 +7,23 @@ import { Label } from "@/components/ui/label";
 import { Prompt } from "@/app/types";
 import { toast } from "sonner";
 
-export function PromptPicker() {
+type Props = {
+  prompt?: Prompt;
+  onSetPrompt: (prompt?: Prompt) => void;
+};
+
+export function PromptPicker({ prompt, onSetPrompt }: Props) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [role, setRole] = useState("");
 
   const mappedPrompts = useMemo(
     () =>
-      prompts.map((prompt) => ({
-        value: prompt.name.toLowerCase(),
-        label: prompt.name,
-        description: prompt.description,
+      prompts.map(({ name, description }) => ({
+        value: name.toLowerCase(),
+        label: name,
+        description,
       })),
     [prompts]
   );
-
-  const description = mappedPrompts.find(
-    (prompt) => prompt.value === role
-  )?.description;
 
   useEffect(() => {
     getPrompts();
@@ -35,10 +35,27 @@ export function PromptPicker() {
     if (response.ok) {
       const result = await response.json();
       setPrompts(result);
-      setRole(result?.[0]?.name.toLowerCase() ?? "");
+      onSetPrompt({
+        ...result?.[0],
+        name: result?.[0]?.name.toLowerCase(),
+      });
     } else {
       const error = await response.json();
       toast.error("Error fetching data from Redis:", error);
+    }
+  };
+
+  const handleSetNewPrompt = (value: string) => {
+    const selectedPrompt = mappedPrompts.find(
+      (prompt) => prompt.value === value.toLowerCase()
+    );
+
+    if (selectedPrompt) {
+      onSetPrompt({
+        name: selectedPrompt.label.toLowerCase(),
+        id: selectedPrompt.value,
+        description: selectedPrompt.description,
+      });
     }
   };
 
@@ -49,12 +66,12 @@ export function PromptPicker() {
       </Label>
       <Combobox
         id="role"
-        value={role}
-        onSetValue={setRole}
+        value={prompt?.name ?? ""}
+        onSetValue={handleSetNewPrompt}
         options={mappedPrompts}
         noResultsContent={<CreatePromptModal onSetPrompts={setPrompts} />}
       />
-      {role && <textarea value={description} disabled />}
+      {!!prompt && <textarea value={prompt.description} disabled />}
     </div>
   );
 }

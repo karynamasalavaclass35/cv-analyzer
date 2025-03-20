@@ -18,8 +18,8 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
 
   const mappedPrompts = useMemo(
     () =>
-      prompts.map(({ name, description }) => ({
-        value: name.toLowerCase(),
+      prompts.map(({ name, description, id }) => ({
+        value: id,
         label: name,
         description,
       })),
@@ -34,7 +34,7 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
     const response = await fetch(`/api/prompts`, { method: "GET" });
 
     if (response.ok) {
-      const result = await response.json();
+      const result: Prompt[] = await response.json();
       setPrompts(result);
       onSetPrompt({
         ...result?.[0],
@@ -60,6 +60,10 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
     }
   };
 
+  const handleRemovePrompt = (value: string) => {
+    console.log("lala", value);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Label htmlFor="role" className="text-gray-800">
@@ -67,12 +71,13 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
       </Label>
       <Combobox
         id="role"
-        value={prompt?.name ?? ""}
+        value={prompt?.id ?? ""}
         onSetValue={handleSetNewPrompt}
         options={mappedPrompts}
         noResultsContent={
           <CreatePromptModal prompts={prompts} onSetPrompts={setPrompts} />
         }
+        onRemoveOption={handleRemovePrompt}
       />
       {!!prompt && <textarea value={prompt.description} disabled />}
     </div>

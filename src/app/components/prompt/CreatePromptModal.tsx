@@ -64,6 +64,7 @@ export const CreatePromptModal = ({ prompts, onSetPrompts }: Props) => {
       const { prompts } = await response.json();
       onSetPrompts(prompts);
 
+      toast.success("Prompt created successfully");
       resetForm();
       setOpen(false);
     } else {

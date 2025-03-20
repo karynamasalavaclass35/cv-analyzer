@@ -33,7 +33,7 @@ export const validateDescription = (
 ): string | undefined => {
   const descriptionLength = description.trim().length;
   if (descriptionLength < 2) return minCharsMessage;
-  if (descriptionLength > 40)
-    return "Description must be at most 40 characters long.";
+  if (descriptionLength > 120)
+    return "Description must be at most 120 characters long.";
   return;
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 
 import { Combobox } from "@/components/custom/combobox";
 import { Label } from "@/components/ui/label";
@@ -8,15 +9,18 @@ import { toast } from "@/components/ui/sonner";
 import { CreatePromptModal } from "@/app/components/prompt/CreatePromptModal";
 import { Prompt } from "@/app/components/prompt/types";
 import { ConfirmationDialog } from "@/components/custom/confirmation-dialog";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   prompt?: Prompt;
   onSetPrompt: (prompt?: Prompt) => void;
 };
 
+type Modal = "remove" | "create" | null;
+
 export function PromptPicker({ prompt, onSetPrompt }: Props) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [removePromptModalOpen, setRemovePromptModalOpen] = useState(false);
+  const [modal, setModal] = useState<Modal>(null);
   const [promptToRemove, setPromptToRemove] = useState<Prompt | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -81,7 +85,7 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
       }
 
       setPromptToRemove(null);
-      setRemovePromptModalOpen(false);
+      setModal(null);
       toast.success("Prompt removed successfully");
     } else {
       const error = await response.json();
@@ -102,22 +106,36 @@ export function PromptPicker({ prompt, onSetPrompt }: Props) {
           value={prompt?.id ?? ""}
           onSetValue={handleSetNewPrompt}
           options={mappedPrompts}
-          noResultsContent={
-            <CreatePromptModal prompts={prompts} onSetPrompts={setPrompts} />
-          }
           onRemoveOption={(id) => {
             const promptToDelete = prompts.find((prompt) => prompt.id === id);
-            setPromptToRemove(promptToDelete || null);
-            setRemovePromptModalOpen(true);
+            setPromptToRemove(promptToDelete ?? null);
+            setModal("remove");
           }}
+          noResultsActionButton={
+            <Button
+              variant="ghost"
+              className="text-indigo-800 cursor-pointer hover:text-indigo-600"
+              onClick={() => setModal("create")}
+            >
+              <Plus />
+              Add new prompt
+            </Button>
+          }
         />
         {!!prompt && <textarea value={prompt.description} disabled />}
       </div>
 
+      <CreatePromptModal
+        open={modal === "create"}
+        setOpen={(open) => setModal(open ? "create" : null)}
+        prompts={prompts}
+        onSetPrompts={setPrompts}
+      />
+
       <ConfirmationDialog
-        open={removePromptModalOpen}
+        open={modal === "remove"}
         description={`This action cannot be undone. Do you want to remove the prompt "${promptToRemove?.name}"?`}
-        onOpenChange={setRemovePromptModalOpen}
+        onOpenChange={(open) => setModal(open ? "remove" : null)}
         onConfirm={() => {
           promptToRemove && handleRemovePrompt(promptToRemove.id);
         }}

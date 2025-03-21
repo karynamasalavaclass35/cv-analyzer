@@ -19,7 +19,7 @@ import {
 
 type Props = {
   options: { value: string; label: string }[];
-  noResultsContent?: React.ReactNode;
+  noResultsActionButton?: React.ReactNode;
   id?: string;
   value: string;
   onSetValue: (value: string) => void;
@@ -29,7 +29,7 @@ type Props = {
 
 export function Combobox({
   options,
-  noResultsContent,
+  noResultsActionButton,
   id,
   value,
   onSetValue,
@@ -65,7 +65,7 @@ export function Combobox({
           <CommandInput placeholder="Search..." />
           <CommandList>
             <CommandEmpty className="text-center p-2">
-              {noResultsContent ?? "No results found"}
+              {noResultsActionButton ?? "No results found"}
             </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (

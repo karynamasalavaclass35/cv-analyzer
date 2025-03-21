@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import {
@@ -10,7 +9,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,10 +23,16 @@ import {
 type Props = {
   prompts: Prompt[];
   onSetPrompts: (prompts: Prompt[]) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 };
 
-export const CreatePromptModal = ({ prompts, onSetPrompts }: Props) => {
-  const [open, setOpen] = useState(false);
+export const CreatePromptModal = ({
+  open,
+  setOpen,
+  prompts,
+  onSetPrompts,
+}: Props) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -89,16 +93,6 @@ export const CreatePromptModal = ({ prompts, onSetPrompts }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          className="text-indigo-800 cursor-pointer hover:text-indigo-600"
-          onClick={() => setOpen(true)}
-        >
-          <Plus />
-          Add new prompt
-        </Button>
-      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-indigo-800">

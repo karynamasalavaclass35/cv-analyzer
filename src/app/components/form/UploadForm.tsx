@@ -21,6 +21,7 @@ import {
 } from "@/app/components/form/FormBackground";
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 import { Prompt } from "@/app/components/prompt/types";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   blobData: ExtendedPutBlobResult[];
@@ -249,13 +250,14 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
 
         <PromptPicker prompt={prompt} onSetPrompt={setPrompt} />
 
-        <button
+        <Button
           type="submit"
           className="self-center w-fit bg-indigo-600 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!files.length || prompt === undefined || isAnyFileLoading}
+          loading={isAnyFileLoading}
         >
-          {isAnyFileLoading ? "Analysing..." : "Analyse"}
-        </button>
+          Analyse
+        </Button>
       </form>
 
       <RightSideBackground />

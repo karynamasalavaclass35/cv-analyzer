@@ -156,8 +156,12 @@ export const CreatePromptModal = ({ prompts, onSetPrompts }: Props) => {
             )}
           </div>
 
-          <Button type="submit" disabled={!isFormValid || isLoading}>
-            {isLoading ? "Creating..." : "Create"}
+          <Button
+            type="submit"
+            disabled={!isFormValid || isLoading}
+            loading={isLoading}
+          >
+            Create
           </Button>
         </form>
       </DialogContent>

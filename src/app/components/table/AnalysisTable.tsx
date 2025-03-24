@@ -10,9 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Analysis, ExtendedPutBlobResult } from "@/app/types";
-import { deleteCVAnalysisData } from "@/utils/requests";
-import { NoResults } from "@/app/components/NoResults";
-import { Loading } from "@/app/components/Loading";
+import { deleteCVAnalysisData } from "@/utils/blobRequests";
+import { NoResults } from "@/app/components/table/NoResults";
+import { Loading } from "@/app/components/table/Loading";
 
 type Props = {
   blobStorageData: ExtendedPutBlobResult[];

@@ -12,13 +12,16 @@ import {
   OllamaResponse,
 } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
-import { saveAnalysisToBlob } from "@/utils/requests";
+import { saveAnalysisToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
-import { UploadedFileBadge } from "@/app/components/UploadedFileBadge";
+import { UploadedFileBadge } from "@/app/components/form/UploadedFileBadge";
 import {
   LeftSideBackground,
   RightSideBackground,
-} from "@/app/components/FormBackground";
+} from "@/app/components/form/FormBackground";
+import { PromptPicker } from "@/app/components/prompt/PromptPicker";
+import { Prompt } from "@/app/components/prompt/types";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   blobData: ExtendedPutBlobResult[];
@@ -26,9 +29,9 @@ type Props = {
 };
 
 export function UploadForm({ blobData, onFetchBlobData }: Props) {
-  const [requiredPosition, setRequiredPosition] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [fileStatus, setFileStatus] = useState<FileStatusRecord>({});
+  const [prompt, setPrompt] = useState<Prompt>();
 
   const isAnyFileLoading = files.some(
     (file) => fileStatus[file.name] === "loading"
@@ -87,7 +90,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
       try {
         const { response } = await validateCvAgainstPosition(
           cvText,
-          requiredPosition
+          `${prompt?.name}: ${prompt?.description}`
         );
         const parsedAnalysis = JSON.parse(response);
 
@@ -165,7 +168,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
 
   const resetForm = () => {
     setFiles([]);
-    setRequiredPosition("");
+    setPrompt(undefined);
     setFileStatus({});
   };
 
@@ -211,7 +214,7 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
       >
         <label
           htmlFor="dropzone-file"
-          className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+          className="flex flex-col items-center justify-center w-full border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
         >
           <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 gap-2">
             <FileUp size={32} className="text-gray-500" />
@@ -245,20 +248,16 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
           ))}
         </div>
 
-        <textarea
-          value={requiredPosition}
-          onChange={(e) => setRequiredPosition(e.target.value)}
-          className="w-full h-40 border border-gray-300 text-sm rounded-lg p-2 resize-none focus:outline-none"
-          placeholder="Enter the job description..."
-        />
+        <PromptPicker prompt={prompt} onSetPrompt={setPrompt} />
 
-        <button
+        <Button
           type="submit"
           className="self-center w-fit bg-indigo-600 text-white p-2 rounded-md cursor-pointer mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!files.length || !requiredPosition || isAnyFileLoading}
+          disabled={!files.length || prompt === undefined || isAnyFileLoading}
+          loading={isAnyFileLoading}
         >
-          {isAnyFileLoading ? "Analysing..." : "Analyse CV(s)"}
-        </button>
+          Analyse
+        </Button>
       </form>
 
       <RightSideBackground />

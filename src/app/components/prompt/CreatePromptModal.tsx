@@ -14,11 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
-import { Prompt, FormErrors } from "@/app/components/prompt/types";
-import {
-  validateDescription,
-  validateName,
-} from "@/app/components/prompt/validation";
+import { Prompt } from "@/app/components/prompt/types";
+import { getPromptSchema } from "@/app/components/prompt/validationSchema";
 
 type Props = {
   prompts: Prompt[];
@@ -36,21 +33,26 @@ export const CreatePromptModal = ({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
-
-  const isFormValid =
-    formErrors.name === undefined &&
-    formErrors.description === undefined &&
-    Object.keys(formErrors).length !== 0;
+  const [formErrors, setFormErrors] = useState<{
+    name?: string;
+    description?: string;
+  }>({});
 
   const handleCreatePrompt = async () => {
     setFormErrors({});
 
-    const nameError = validateName(name, prompts);
-    const descriptionError = validateDescription(description);
+    const validationResult = getPromptSchema(prompts).safeParse({
+      name,
+      description,
+    });
 
-    if (nameError || descriptionError) {
-      setFormErrors({ name: nameError, description: descriptionError });
+    if (!validationResult.success) {
+      validationResult.error.errors.forEach((error) => {
+        setFormErrors((prev) => ({
+          ...prev,
+          [error.path[0]]: error.message,
+        }));
+      });
       return;
     }
 
@@ -113,15 +115,11 @@ export const CreatePromptModal = ({
               <RequiredFieldIndicator />
             </Label>
             <Input
-              required
               id="name"
               value={name}
               onChange={(e) => {
                 setName(e.target.value);
-                setFormErrors((prev) => ({
-                  ...prev,
-                  name: validateName(e.target.value, prompts),
-                }));
+                setFormErrors((prev) => ({ ...prev, name: undefined }));
               }}
             />
             {formErrors.name && <ErrorMessage message={formErrors.name} />}
@@ -133,16 +131,12 @@ export const CreatePromptModal = ({
               <RequiredFieldIndicator />
             </Label>
             <textarea
-              required
               id="description"
               className="w-full"
               value={description}
               onChange={(e) => {
                 setDescription(e.target.value);
-                setFormErrors((prev) => ({
-                  ...prev,
-                  description: validateDescription(e.target.value),
-                }));
+                setFormErrors((prev) => ({ ...prev, description: undefined }));
               }}
             />
             {formErrors.description && (
@@ -150,11 +144,7 @@ export const CreatePromptModal = ({
             )}
           </div>
 
-          <Button
-            type="submit"
-            disabled={!isFormValid || isLoading}
-            loading={isLoading}
-          >
+          <Button type="submit" disabled={isLoading} loading={isLoading}>
             Create
           </Button>
         </form>

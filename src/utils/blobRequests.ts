@@ -1,14 +1,14 @@
-import { Analysis, ExtendedPutBlobResult } from "@/app/types";
+import { ExtendedPutBlobResult } from "@/app/types";
 import { toast } from "@/components/ui/sonner";
-import { PutBlobResult } from "@vercel/blob";
+import { ListBlobResultBlob, PutBlobResult } from "@vercel/blob";
 
-export const saveAnalysisToBlob = async (
-  analysis: Analysis,
-  hash: string
-): Promise<PutBlobResult> => {
-  const response = await fetch(`/api/analysis?fileHash=${hash}`, {
+export const saveCvToBlob = async (cv: File): Promise<PutBlobResult> => {
+  const formData = new FormData();
+  formData.append("file", cv);
+
+  const response = await fetch(`/api/cvs`, {
     method: "POST",
-    body: JSON.stringify(analysis),
+    body: formData,
   });
 
   return await response.json();
@@ -38,4 +38,10 @@ export const deleteCVAnalysisData = async (
   } catch (error) {
     toast.error("Failed to delete CV analysis data");
   }
+};
+
+export const getBlobFileData = (blob: PutBlobResult | ListBlobResultBlob) => {
+  // the pathname is like this: "1234567890-cv.pdf" (hash-fileName)
+  const splittedPathname = blob.pathname.split("-");
+  return { fileName: splittedPathname[1], savedHash: splittedPathname[0] };
 };

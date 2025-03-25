@@ -1,13 +1,8 @@
-import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
 import { Prompt } from "@/app/components/prompt/types";
-
-const redis = new Redis({
-  url: process.env.DB_KV_REST_API_URL,
-  token: process.env.DB_KV_REST_API_TOKEN,
-});
+import { redis } from "@/utils/redisClient";
 
 export async function GET(): Promise<NextResponse> {
   try {

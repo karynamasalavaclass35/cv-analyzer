@@ -12,7 +12,7 @@ import {
   OllamaResponse,
 } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
-import { saveAnalysisToBlob } from "@/utils/blobRequests";
+import { getBlobFileData, saveCvToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
 import { UploadedFileBadge } from "@/app/components/form/UploadedFileBadge";
 import {
@@ -77,9 +77,10 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
     if (!cvText) return "error";
 
     const hash = crypto.createHash("sha256").update(cvText).digest("hex");
-    const isFileAlreadyInBlob = !!blobData.find(
-      (item: PutBlobResult) => item.pathname === hash
-    );
+    const isFileAlreadyInBlob = !!blobData.find((item: PutBlobResult) => {
+      const { savedHash } = getBlobFileData(item);
+      return savedHash === hash;
+    });
 
     if (isFileAlreadyInBlob) {
       toast.info(
@@ -98,12 +99,9 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
           throw new Error(`${file.name}: received empty analysis response`);
         }
 
-        await saveAnalysisToBlob(
-          { fileName: file.name, ...parsedAnalysis },
-          hash
-        );
+        await saveCvToBlob(file);
 
-        onFetchBlobData();
+        onFetchBlobData(); // todo: remove this?
 
         return "done";
       } catch (error) {
@@ -223,14 +221,14 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
               drop
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              We accept PDF, DOC, DOCX files
+              We accept PDF, DOCX files
             </p>
           </div>
           <input
             id="dropzone-file"
             type="file"
             className="hidden"
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.docx"
             multiple
             onChange={handleFileUploadChange}
           />

@@ -27,14 +27,14 @@ export default function Home() {
       <main className="flex items-center justify-center w-full h-full">
         <div className="flex flex-col gap-4 w-full">
           <UploadForm blobData={blobData} onFetchBlobData={fetchBlobData} />
-
+          {/* 
           <div className="mt-20">
             <AnalysisTable
               blobStorageData={blobData}
               onSetBlobData={setBlobData}
               loading={loading}
             />
-          </div>
+          </div> */}
         </div>
       </main>
     </div>

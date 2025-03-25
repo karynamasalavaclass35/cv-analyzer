@@ -10,7 +10,6 @@ export const getPromptSchema = (existingPrompts: Prompt[]) =>
     name: z
       .string()
       .min(2, minCharsMessage)
-      .max(20, "Must be at most 20 characters long")
       .nonempty(requiredMessage)
       .refine(
         (name) =>
@@ -19,9 +18,5 @@ export const getPromptSchema = (existingPrompts: Prompt[]) =>
           ),
         { message: "A prompt with this name already exists" }
       ),
-    description: z
-      .string()
-      .min(2, minCharsMessage)
-      .max(120, "Must be at most 120 characters long")
-      .nonempty(requiredMessage),
+    description: z.string().min(2, minCharsMessage).nonempty(requiredMessage),
   });

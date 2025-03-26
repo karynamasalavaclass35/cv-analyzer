@@ -1,16 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import crypto from "crypto";
 import { PutBlobResult } from "@vercel/blob";
 import { FileUp } from "lucide-react";
 
-import {
-  ExtendedPutBlobResult,
-  FileStatus,
-  FileStatusRecord,
-  OllamaResponse,
-} from "@/app/types";
+import { FileStatus, FileStatusRecord, OllamaResponse } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
 import { getBlobFileData, saveCvToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
@@ -22,13 +16,9 @@ import {
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 import { Prompt } from "@/app/components/prompt/types";
 import { Button } from "@/components/ui/button";
+import { CV } from "@/app/components/table/types";
 
-type Props = {
-  blobData: ExtendedPutBlobResult[];
-  onFetchBlobData: () => void;
-};
-
-export function UploadForm({ blobData, onFetchBlobData }: Props) {
+export function UploadForm() {
   const [files, setFiles] = useState<File[]>([]);
   const [fileStatus, setFileStatus] = useState<FileStatusRecord>({});
   const [prompt, setPrompt] = useState<Prompt>();
@@ -71,47 +61,70 @@ export function UploadForm({ blobData, onFetchBlobData }: Props) {
     }
   };
 
+  const saveCvToDB = async (
+    blob: PutBlobResult,
+    hash: string,
+    fileName: string
+  ): Promise<void> => {
+    const oldCvsResponse = await fetch(`/api/cvs`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const { data } = await oldCvsResponse.json();
+    const cvAlreadyExists = data.some((cv: CV) => cv.id === hash);
+
+    if (cvAlreadyExists) return;
+
+    const response = await fetch(`/api/cvs`, {
+      method: "POST",
+      body: JSON.stringify({ id: hash, blob, fileName }),
+    });
+
+    const { data: cvs } = await response.json();
+
+    // todo: setCvs(cvs);
+  };
+
   const runFileAnalysis = async (file: File): Promise<FileStatus> => {
     const cvText = await parseCvToString(file);
 
     if (!cvText) return "error";
 
-    const hash = crypto.createHash("sha256").update(cvText).digest("hex");
-    const isFileAlreadyInBlob = !!blobData.find((item: PutBlobResult) => {
-      const { savedHash } = getBlobFileData(item);
-      return savedHash === hash;
-    });
+    try {
+      const blobsResponse = await saveCvToBlob(file);
 
-    if (isFileAlreadyInBlob) {
-      toast.info(
-        `File ${file.name} has already been analysed, see the analysis in the table below`
-      );
-      return "done";
-    } else {
-      try {
-        const { response } = await validateCvAgainstPosition(
-          cvText,
-          `${prompt?.name}: ${prompt?.description}`
-        );
-        const parsedAnalysis = JSON.parse(response);
+      if (blobsResponse) {
+        const { savedHash } = getBlobFileData(blobsResponse);
 
-        if (!Object.keys(parsedAnalysis).length) {
-          throw new Error(`${file.name}: received empty analysis response`);
-        }
-
-        await saveCvToBlob(file);
-
-        onFetchBlobData(); // todo: remove this?
-
-        return "done";
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : `Failed to analyze ${file.name}`
-        );
-        return "error";
+        await saveCvToDB(blobsResponse, savedHash, file.name);
+      } else {
+        //fixme: wrong
+        throw new Error(`${file.name}: failed to save CV to blob`);
       }
+
+      // const { response } = await validateCvAgainstPosition(
+      //   cvText,
+      //   `${prompt?.name}: ${prompt?.description}`
+      // );
+      // const parsedAnalysis = JSON.parse(response);
+
+      // if (!Object.keys(parsedAnalysis).length) {
+      //   throw new Error(`${file.name}: received empty analysis response`);
+      // }
+
+      // onFetchCvsData(); // todo:
+
+      return "done";
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to analyze ${file.name}`
+      );
+      return "error";
     }
   };
 

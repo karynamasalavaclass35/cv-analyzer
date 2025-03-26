@@ -9,32 +9,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Analysis, ExtendedPutBlobResult } from "@/app/types";
-import { deleteCVAnalysisData } from "@/utils/blobRequests";
 import { NoResults } from "@/app/components/table/NoResults";
 import { Loading } from "@/app/components/table/Loading";
+import { Analysis, CV } from "@/app/components/table/types";
 
 type Props = {
-  blobStorageData: ExtendedPutBlobResult[];
-  onSetBlobData: (blobData: ExtendedPutBlobResult[]) => void;
+  cvs: CV[];
+  onSetCvs: (cvs: CV[]) => void;
   loading: boolean;
 };
 
 const columns: (keyof Analysis)[] = [
-  "fileName",
-  "pros",
-  "cons",
-  "fitPercentage",
-  "feedback",
+  "applicant",
+  "role",
+  "requirements",
+  "fitScore",
 ];
 
-export function AnalysisTable({
-  blobStorageData,
-  onSetBlobData,
-  loading,
-}: Props) {
+export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
   if (loading) return <Loading />;
-  if (!blobStorageData.length) return <NoResults />;
+  if (!cvs.length) return <NoResults />;
 
   return (
     <Table>
@@ -50,38 +44,26 @@ export function AnalysisTable({
       </TableHeader>
 
       <TableBody>
-        {blobStorageData.map((blob) => {
-          const { analysis, pathname } = blob;
+        {cvs.map((cv) => {
+          const { id, fileName, roles } = cv;
+
           return (
-            <TableRow key={pathname} className="w-full">
-              {columns.map((column) => (
-                <TableCell key={column}>
-                  {Array.isArray(analysis[column]) ? (
-                    analysis[column].length > 0 ? (
-                      <ol className="list-decimal list-inside">
-                        {analysis[column].map((item) => {
-                          if (typeof item !== "string") return "N/A";
-                          return <li key={item}>{item}</li>;
-                        })}
-                      </ol>
-                    ) : (
-                      "N/A"
-                    )
-                  ) : (
-                    analysis[column] ?? "N/A"
-                  )}
+            roles?.length > 0 &&
+            roles.map((role) => (
+              <TableRow key={`${id}-${role.id}`} className="w-full">
+                <TableCell>{fileName}</TableCell>
+                <TableCell>{role.name}</TableCell>
+                <TableCell>{role.description}</TableCell>
+                <TableCell>{`${role.fitScore}%`}</TableCell>
+                <TableCell className="text-center">
+                  <Trash2
+                    size={16}
+                    className="cursor-pointer text-indigo-900 hover:text-red-800"
+                    // onClick={async () => await deleteCVAnalysisData(cv.id, onSetCvs)}
+                  />
                 </TableCell>
-              ))}
-              <TableCell key="body_actions" className="text-center">
-                <Trash2
-                  size={16}
-                  className="cursor-pointer text-indigo-900 hover:text-red-800"
-                  onClick={async () =>
-                    await deleteCVAnalysisData(blob, onSetBlobData)
-                  }
-                />
-              </TableCell>
-            </TableRow>
+              </TableRow>
+            ))
           );
         })}
       </TableBody>

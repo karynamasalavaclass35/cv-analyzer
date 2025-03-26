@@ -1,4 +1,4 @@
-import { put, del } from "@vercel/blob";
+import { put, del, list } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 import { prepareBlobDataForUI } from "@/app/api/analysis/helpers";
@@ -32,7 +32,13 @@ export async function POST(request: Request): Promise<NextResponse> {
 
 export async function GET(): Promise<NextResponse> {
   try {
-    return await prepareBlobDataForUI();
+    const { blobs } = await list();
+
+    if (!blobs.length) {
+      return NextResponse.json({ data: [] });
+    }
+
+    return NextResponse.json({ blobs });
   } catch (error) {
     console.error("Error in GET request:", error);
     return NextResponse.json(

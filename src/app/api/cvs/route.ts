@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-import { list, put } from "@vercel/blob";
-import crypto from "crypto";
-
 import { redis } from "@/utils/redisClient";
-import { getBlobFileData } from "@/utils/blobRequests";
+import { PutBlobResult } from "@vercel/blob";
 
 export async function GET(): Promise<NextResponse> {
   try {
     const cvs = await redis.lrange("cvs", 0, -1);
-    return NextResponse.json({ cvs });
+
+    if (!cvs) {
+      return NextResponse.json(
+        { message: "Failed to fetch CVs" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ data: cvs });
   } catch (error) {
     return NextResponse.json(
       { message: `Error occurred while fetching: ${error}` },
@@ -18,59 +23,36 @@ export async function GET(): Promise<NextResponse> {
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const formData = await request.formData();
-  const file = formData.get("file") as File;
+  const {
+    blob,
+    id,
+    fileName,
+  }: { blob: PutBlobResult; id: string; fileName: string } =
+    await request.json();
 
-  if (!file.name) {
-    return NextResponse.json({ message: "No file provided" }, { status: 400 });
+  if (!blob || !id) {
+    return NextResponse.json({ message: "No body provided" }, { status: 400 });
   }
 
-  const arrayBuffer = await file.arrayBuffer();
-  const hash = crypto
-    .createHash("sha256")
-    .update(Buffer.from(arrayBuffer))
-    .digest("hex");
-
   try {
-    const { blobs } = await list();
+    const { downloadUrl, url } = blob;
 
-    const fileExists = blobs.some((blob) => {
-      const { savedHash, fileName } = getBlobFileData(blob);
-      return savedHash === hash && fileName === file.name;
-    });
-
-    if (fileExists) {
-      const cvs = await redis.lrange("cvs", 0, -1);
-      return NextResponse.json({ cvs });
-    }
-
-    const blob = await put(`${hash}-${file.name}`, file, {
-      access: "public",
-    });
-
-    if (!blob) {
-      return NextResponse.json(
-        { message: "Error uploading file to blob storage" },
-        { status: 500 }
-      );
-    }
-
-    await redis.lpush(
+    const cv = await redis.lpush(
       "cvs",
       JSON.stringify({
-        downloadUrl: blob.downloadUrl,
-        fileName: file.name,
-        url: blob.url,
+        id,
+        downloadUrl,
+        fileName,
+        url,
         createdAt: new Date().toISOString(),
+        roles: [],
       })
     );
 
-    const cvs = await redis.lrange("cvs", 0, -1);
-
-    return NextResponse.json({ cvs });
+    return NextResponse.json({ data: cv });
   } catch (error) {
     return NextResponse.json(
-      { message: `Error uploading file: ${error}` },
+      { message: `Error uploading cv to database: ${error}` },
       { status: 500 }
     );
   }

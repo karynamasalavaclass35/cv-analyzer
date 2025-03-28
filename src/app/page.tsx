@@ -34,7 +34,7 @@ export default function Home() {
     <div className="p-10 bg-indigo-50">
       <main className="flex items-center justify-center w-full h-full">
         <div className="flex flex-col gap-4 w-full">
-          <UploadForm />
+          <UploadForm onSetCvs={setCvs} />
           <AnalysisTable cvs={cvs} onSetCvs={setCvs} loading={loading} />
         </div>
       </main>

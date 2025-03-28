@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { redis } from "@/utils/redisClient";
 import { PutBlobResult } from "@vercel/blob";
 
+import { Prompt } from "@/app/components/prompt/types";
+
 export async function GET(): Promise<NextResponse> {
   try {
     const cvs = await redis.lrange("cvs", 0, -1);
@@ -27,17 +29,40 @@ export async function POST(request: Request): Promise<NextResponse> {
     blob,
     id,
     fileName,
-  }: { blob: PutBlobResult; id: string; fileName: string } =
+    prompt,
+  }: { blob: PutBlobResult; id: string; fileName: string; prompt: Prompt } =
     await request.json();
 
-  if (!blob || !id) {
+  if (!blob) {
+    return NextResponse.json({ message: "No blob provided" }, { status: 400 });
+  }
+
+  if (!id) {
+    return NextResponse.json({ message: "No id provided" }, { status: 400 });
+  }
+
+  if (!fileName) {
+    return NextResponse.json(
+      { message: "No file name provided" },
+      { status: 400 }
+    );
+  }
+
+  if (!prompt) {
+    return NextResponse.json(
+      { message: "No prompt provided" },
+      { status: 400 }
+    );
+  }
+
+  if (!blob && !id && !prompt && !fileName) {
     return NextResponse.json({ message: "No body provided" }, { status: 400 });
   }
 
   try {
     const { downloadUrl, url } = blob;
 
-    const cv = await redis.lpush(
+    await redis.lpush(
       "cvs",
       JSON.stringify({
         id,
@@ -45,11 +70,19 @@ export async function POST(request: Request): Promise<NextResponse> {
         fileName,
         url,
         createdAt: new Date().toISOString(),
-        roles: [],
+        roles: [
+          {
+            id: "1", // fixme:
+            name: prompt.name,
+            description: prompt.description,
+          },
+        ],
       })
     );
 
-    return NextResponse.json({ data: cv });
+    const cvs = await redis.lrange("cvs", 0, -1);
+
+    return NextResponse.json({ data: cvs });
   } catch (error) {
     return NextResponse.json(
       { message: `Error uploading cv to database: ${error}` },

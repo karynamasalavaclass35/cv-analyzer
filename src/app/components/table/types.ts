@@ -14,10 +14,3 @@ export type CV = {
   createdAt: string; // timestamp
   roles: Role[];
 };
-
-export type Analysis = {
-  applicant: string;
-  role: string;
-  requirements: string;
-  fitScore: number;
-};

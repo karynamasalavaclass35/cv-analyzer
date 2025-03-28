@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { NoResults } from "@/app/components/table/NoResults";
 import { Loading } from "@/app/components/table/Loading";
-import { Analysis, CV, Role } from "@/app/components/table/types";
+import { CV, Role } from "@/app/components/table/types";
 
 type Props = {
   cvs: CV[];
@@ -19,12 +19,7 @@ type Props = {
   loading: boolean;
 };
 
-const columns: (keyof Analysis)[] = [
-  "applicant",
-  "role",
-  "requirements",
-  "fitScore",
-];
+const columns = ["applicant", "role", "requirements", "fitScore"];
 
 export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
   if (loading) return <Loading />;

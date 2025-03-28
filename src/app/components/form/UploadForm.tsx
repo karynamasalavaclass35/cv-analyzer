@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { PutBlobResult } from "@vercel/blob";
 import { FileUp } from "lucide-react";
 
 import { FileStatus, FileStatusRecord, OllamaResponse } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
-import { getBlobFileData, saveCvToBlob } from "@/utils/blobRequests";
+import { saveCvToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
 import { UploadedFileBadge } from "@/app/components/form/UploadedFileBadge";
 import {
@@ -16,9 +15,10 @@ import {
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 import { Prompt } from "@/app/components/prompt/types";
 import { Button } from "@/components/ui/button";
+import { saveCvToDB } from "@/utils/cvRequests";
 import { CV } from "@/app/components/table/types";
 
-export function UploadForm() {
+export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
   const [files, setFiles] = useState<File[]>([]);
   const [fileStatus, setFileStatus] = useState<FileStatusRecord>({});
   const [prompt, setPrompt] = useState<Prompt>();
@@ -61,49 +61,25 @@ export function UploadForm() {
     }
   };
 
-  const saveCvToDB = async (
-    blob: PutBlobResult,
-    hash: string,
-    fileName: string
-  ): Promise<void> => {
-    const oldCvsResponse = await fetch(`/api/cvs`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const { data } = await oldCvsResponse.json();
-    const cvAlreadyExists = data.some((cv: CV) => cv.id === hash);
-
-    if (cvAlreadyExists) return;
-
-    const response = await fetch(`/api/cvs`, {
-      method: "POST",
-      body: JSON.stringify({ id: hash, blob, fileName }),
-    });
-
-    const { data: cvs } = await response.json();
-
-    // todo: setCvs(cvs);
-  };
-
   const runFileAnalysis = async (file: File): Promise<FileStatus> => {
-    const cvText = await parseCvToString(file);
-
-    if (!cvText) return "error";
-
     try {
       const blobsResponse = await saveCvToBlob(file);
 
-      if (blobsResponse) {
-        const { savedHash } = getBlobFileData(blobsResponse);
-
-        await saveCvToDB(blobsResponse, savedHash, file.name);
+      if (blobsResponse && prompt) {
+        await saveCvToDB({
+          blob: blobsResponse,
+          fileName: file.name,
+          prompt,
+          onSetCvs,
+        });
       } else {
         //fixme: wrong
         throw new Error(`${file.name}: failed to save CV to blob`);
       }
+
+      const cvText = await parseCvToString(file);
+
+      if (!cvText) return "error";
 
       // const { response } = await validateCvAgainstPosition(
       //   cvText,

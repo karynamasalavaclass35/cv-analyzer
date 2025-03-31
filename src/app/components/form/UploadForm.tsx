@@ -5,7 +5,6 @@ import { FileUp } from "lucide-react";
 
 import { FileStatus, FileStatusRecord, OllamaResponse } from "@/app/types";
 import { parseCvToString } from "@/utils/parsers";
-import { saveCvToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
 import { UploadedFileBadge } from "@/app/components/form/UploadedFileBadge";
 import {
@@ -15,7 +14,7 @@ import {
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 import { Prompt } from "@/app/components/prompt/types";
 import { Button } from "@/components/ui/button";
-import { saveCvToDB } from "@/utils/cvRequests";
+import { saveCv } from "@/utils/cvRequests";
 import { CV } from "@/app/components/table/types";
 
 export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
@@ -63,18 +62,8 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
 
   const runFileAnalysis = async (file: File): Promise<FileStatus> => {
     try {
-      const blobsResponse = await saveCvToBlob(file);
-
-      if (blobsResponse && prompt) {
-        await saveCvToDB({
-          blob: blobsResponse,
-          fileName: file.name,
-          prompt,
-          onSetCvs,
-        });
-      } else {
-        //fixme: wrong
-        throw new Error(`${file.name}: failed to save CV to blob`);
+      if (prompt) {
+        await saveCv(file, onSetCvs, prompt);
       }
 
       const cvText = await parseCvToString(file);

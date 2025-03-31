@@ -1,8 +1,8 @@
 import { put, list } from "@vercel/blob";
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 
 import { getBlobFileData } from "@/utils/blobRequests";
+import { createFileHash } from "@/utils";
 
 export async function GET(): Promise<NextResponse> {
   try {
@@ -29,11 +29,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ message: "No file provided" }, { status: 400 });
   }
 
-  const arrayBuffer = await file.arrayBuffer();
-  const hash = crypto
-    .createHash("sha256")
-    .update(Buffer.from(arrayBuffer))
-    .digest("hex");
+  const hash = await createFileHash(file);
 
   try {
     const { blobs } = await list();

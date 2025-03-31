@@ -95,7 +95,9 @@ const DeleteCell = () => (
 const TableRowContent = ({ role }: { role?: Role }) => (
   <>
     <TableCell>{role?.name ?? "-"}</TableCell>
-    <TableCell>{role?.description ?? "-"}</TableCell>
+    <TableCell>
+      <div className="max-h-24 overflow-y-auto">{role?.description ?? "-"}</div>
+    </TableCell>
     <TableCell>{role?.fitScore ? `${role.fitScore}%` : "-"}</TableCell>
   </>
 );

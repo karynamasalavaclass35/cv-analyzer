@@ -28,7 +28,7 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
 
   const validateCvAgainstPosition = async (
     cvText: string,
-    requiredPosition: string
+    prompt: Prompt
   ): Promise<OllamaResponse> => {
     try {
       const response = await fetch(
@@ -41,8 +41,7 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
           body: JSON.stringify({
             model: "llama3.2",
             stream: false,
-            format: "json",
-            prompt: `Please analyze the CV content: "${cvText}". Determine if it fits the position and its requirements: "${requiredPosition}". Please provide a feedback consisting only of the following fields: pros, cons, fitPercentage and feedback`,
+            prompt: `Please analyse the CV for the following position: ${prompt.name}, with the following requirements: ${prompt.description}, here is the CV content: ${cvText}. Provide a fit score between 0 and 100, the response should only contain this number.`,
           }),
         }
       );
@@ -62,25 +61,21 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
 
   const runFileAnalysis = async (file: File): Promise<FileStatus> => {
     try {
-      if (prompt) {
-        await saveCv(file, onSetCvs, prompt);
-      }
+      if (!prompt) return "error";
+
+      const updatedCvs = await saveCv(file, prompt);
+      if (!updatedCvs) return "done";
+      onSetCvs(updatedCvs); // todo: should be done in one request with fitscore?
 
       const cvText = await parseCvToString(file);
-
       if (!cvText) return "error";
 
-      // const { response } = await validateCvAgainstPosition(
-      //   cvText,
-      //   `${prompt?.name}: ${prompt?.description}`
-      // );
-      // const parsedAnalysis = JSON.parse(response);
+      const aiResult = await validateCvAgainstPosition(cvText, prompt);
+      if (!aiResult) return "error";
 
-      // if (!Object.keys(parsedAnalysis).length) {
-      //   throw new Error(`${file.name}: received empty analysis response`);
-      // }
-
-      // onFetchCvsData(); // todo:
+      if (!aiResult.response.length) {
+        throw new Error(`${file.name}: received empty analysis response`);
+      }
 
       return "done";
     } catch (error) {
@@ -150,22 +145,28 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
 
   const handleFileUploadChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files ?? []);
-    const uniqueFiles = newFiles.filter((newFile) => {
-      const isDuplicate = files.some(
-        (file) =>
-          file.name === newFile.name &&
-          file.size === newFile.size &&
-          file.type === newFile.type
+
+    const isDuplicate = (file: File) =>
+      files.some(
+        ({ name, size, type }) =>
+          name === file.name && size === file.size && type === file.type
       );
 
-      if (isDuplicate) {
-        toast.info(`File ${newFile.name} has already been uploaded.`);
-      }
+    const duplicateFiles = newFiles.filter(isDuplicate);
 
-      return !isDuplicate;
-    });
+    if (duplicateFiles.length > 0) {
+      toast.info(
+        duplicateFiles.length === 1
+          ? `A file ${duplicateFiles[0].name} has already been selected, it won't be added again`
+          : `Some files have been selected repeatedly, they won't be added again`
+      );
+    }
 
+    const uniqueFiles = newFiles.filter((file) => !isDuplicate(file));
     setFiles((files) => [...files, ...uniqueFiles]);
+
+    // reset input value to allow selecting the same file again (for example after the form is submitted)
+    e.target.value = "";
   };
 
   const handleRemoveUploadedFile = (file: File) => {
@@ -213,9 +214,9 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
         </label>
 
         <div className="flex gap-2 w-full flex-wrap">
-          {files.map((file) => (
+          {files.map((file, index) => (
             <UploadedFileBadge
-              key={file.name + file.size}
+              key={file.name + file.size + index}
               file={file}
               fileStatus={fileStatus}
               onRemove={handleRemoveUploadedFile}

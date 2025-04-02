@@ -26,7 +26,7 @@ export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
   if (!cvs.length) return <NoResults />;
 
   return (
-    <Table className="mt-20">
+    <Table>
       <TableHeader>
         <TableRow className="text-indigo-900 w-full">
           {columns.map((column) => (

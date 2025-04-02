@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div className="max-h-[700px] overflow-y-auto">
+    <div className="max-h-[700px] overflow-y-auto mt-16">
       <table
         data-slot="table"
         className={cn(

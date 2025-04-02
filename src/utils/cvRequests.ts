@@ -15,11 +15,17 @@ const fetchCvs = async (): Promise<CV[]> => {
   return data;
 };
 
+/**
+ * Saves a CV to the database
+ * @param file - The file to save
+ * @param onSetCvs - The function to call when the CV is saved
+ * @param prompt - The prompt to use for the CV analysis
+ * @returns void or null if the CV already analysed for this role
+ */
 export const saveCv = async (
   file: File,
-  onSetCvs: (cvs: CV[]) => void,
   prompt: Prompt
-): Promise<void> => {
+): Promise<CV[] | null> => {
   const hash = await createFileHash(file);
   const cvs = await fetchCvs();
   const cv = cvs.find((cv: CV) => cv.id === hash);
@@ -31,12 +37,11 @@ export const saveCv = async (
     );
 
     if (cvAnalysedForThisRole) {
-      toast.info("CV already analysed for this role");
-      return;
+      toast.info(`File ${file.name} already analysed for ${prompt.name} role`);
+      return null;
     }
 
-    const updatedCvs = await updateCv(cv.id, prompt);
-    onSetCvs(updatedCvs);
+    return await updateCv(cv.id, prompt);
   } else {
     const blob = await saveCvToBlob(file);
 
@@ -46,9 +51,11 @@ export const saveCv = async (
         body: JSON.stringify({ id: hash, blob, fileName: file.name, prompt }),
       });
       const { data } = await response.json();
-      onSetCvs(data);
+      return data;
     }
   }
+
+  return null;
 };
 
 export const updateCv = async (cvId: string, prompt: Prompt): Promise<CV[]> => {

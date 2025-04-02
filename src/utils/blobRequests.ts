@@ -6,7 +6,7 @@ export const saveCvToBlob = async (cv: File): Promise<PutBlobResult> => {
   const formData = new FormData();
   formData.append("file", cv);
 
-  const response = await fetch(`/api/blobs`, {
+  const response = await fetch(`/api/blobs?create`, {
     method: "POST",
     body: formData,
   });

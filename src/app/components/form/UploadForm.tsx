@@ -14,7 +14,7 @@ import {
 import { PromptPicker } from "@/app/components/prompt/PromptPicker";
 import { Prompt } from "@/app/components/prompt/types";
 import { Button } from "@/components/ui/button";
-import { saveCv } from "@/utils/cvRequests";
+import { saveCv, updateCv, fetchCvs } from "@/utils/cvRequests";
 import { CV } from "@/app/components/table/types";
 
 export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
@@ -63,9 +63,8 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
     try {
       if (!prompt) return "error";
 
-      const updatedCvs = await saveCv(file, prompt);
-      if (!updatedCvs) return "done";
-      onSetCvs(updatedCvs); // todo: should be done in one request with fitscore?
+      const newlySavedCv = await saveCv(file, prompt);
+      if (!newlySavedCv) return "done"; // null if the file is already in the database
 
       const cvText = await parseCvToString(file);
       if (!cvText) return "error";
@@ -76,6 +75,15 @@ export function UploadForm({ onSetCvs }: { onSetCvs: (cvs: CV[]) => void }) {
       if (!aiResult.response.length) {
         throw new Error(`${file.name}: received empty analysis response`);
       }
+
+      await updateCv({
+        cvId: newlySavedCv.id,
+        fitScore: aiResult.response,
+        prompt,
+      });
+
+      const cvs = await fetchCvs();
+      onSetCvs(cvs);
 
       return "done";
     } catch (error) {

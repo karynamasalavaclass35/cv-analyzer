@@ -63,21 +63,18 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const { downloadUrl, url } = blob;
 
-    await redis.lpush(
-      "cvs",
-      JSON.stringify({
-        id,
-        downloadUrl,
-        fileName,
-        url,
-        createdAt: new Date().toISOString(),
-        roles: [prompt],
-      })
-    );
+    const newCv: CV = {
+      id,
+      downloadUrl,
+      fileName,
+      url,
+      createdAt: new Date().toISOString(),
+      roles: [prompt],
+    };
 
-    const cvs = await redis.lrange("cvs", 0, -1);
+    await redis.lpush("cvs", JSON.stringify(newCv));
 
-    return NextResponse.json({ data: cvs });
+    return NextResponse.json({ data: newCv });
   } catch (error) {
     return NextResponse.json(
       { message: `Error uploading cv to database: ${error}` },
@@ -87,21 +84,43 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 export async function PUT(request: Request): Promise<NextResponse> {
-  const { id, prompt }: { id: string; prompt: Prompt } = await request.json();
+  const {
+    id,
+    prompt,
+    fitScore,
+  }: { id: string; prompt: Prompt; fitScore?: string } = await request.json();
 
   try {
     const cvs: CV[] = await redis.lrange("cvs", 0, -1);
     const cvIndex = cvs.findIndex((cv) => cv.id === id);
 
-    if (cvIndex !== -1) {
-      const cv = cvs[cvIndex];
-      cv.roles.push(prompt);
-      await redis.lset("cvs", cvIndex, JSON.stringify(cv));
+    if (cvIndex === -1) {
+      return NextResponse.json(
+        { message: "CV with this id not found" },
+        { status: 404 }
+      );
     }
 
-    const updatedCvs = await redis.lrange("cvs", 0, -1);
+    const cv = cvs[cvIndex];
+    const roleIndex = cv.roles.findIndex((role) => role.id === prompt.id);
 
-    return NextResponse.json({ data: updatedCvs });
+    if (roleIndex === -1) {
+      cv.roles.push({
+        ...prompt,
+        ...(fitScore && { fitScore: +fitScore }),
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      cv.roles[roleIndex] = {
+        ...cv.roles[roleIndex],
+        fitScore: fitScore ? +fitScore : cv.roles[roleIndex].fitScore, // Update fitScore if provided
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    await redis.lset("cvs", cvIndex, JSON.stringify(cv));
+
+    return NextResponse.json({ data: cv });
   } catch (error) {
     return NextResponse.json(
       { message: `Error uploading cv to database: ${error}` },

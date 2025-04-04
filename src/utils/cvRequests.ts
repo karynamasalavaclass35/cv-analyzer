@@ -4,7 +4,7 @@ import { createFileHash } from "@/utils";
 import { saveCvToBlob } from "@/utils/blobRequests";
 import { toast } from "@/components/ui/sonner";
 
-const fetchCvs = async (): Promise<CV[]> => {
+export const fetchCvs = async (): Promise<CV[]> => {
   const response = await fetch("/api/cvs", {
     method: "GET",
     headers: {
@@ -25,7 +25,7 @@ const fetchCvs = async (): Promise<CV[]> => {
 export const saveCv = async (
   file: File,
   prompt: Prompt
-): Promise<CV[] | null> => {
+): Promise<CV | null> => {
   const hash = await createFileHash(file);
   const cvs = await fetchCvs();
   const cv = cvs.find((cv: CV) => cv.id === hash);
@@ -41,7 +41,7 @@ export const saveCv = async (
       return null;
     }
 
-    return await updateCv(cv.id, prompt);
+    return await updateCv({ cvId: cv.id, prompt });
   } else {
     const blob = await saveCvToBlob(file);
 
@@ -58,10 +58,18 @@ export const saveCv = async (
   return null;
 };
 
-export const updateCv = async (cvId: string, prompt: Prompt): Promise<CV[]> => {
+export const updateCv = async ({
+  cvId,
+  prompt,
+  fitScore,
+}: {
+  cvId: string;
+  prompt?: Prompt;
+  fitScore?: string;
+}): Promise<CV> => {
   const response = await fetch(`/api/cvs?update`, {
     method: "PUT",
-    body: JSON.stringify({ id: cvId, prompt }),
+    body: JSON.stringify({ id: cvId, prompt, fitScore }),
     headers: {
       "Content-Type": "application/json",
     },

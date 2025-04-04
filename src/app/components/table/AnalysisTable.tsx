@@ -12,6 +12,9 @@ import {
 import { NoResults } from "@/app/components/table/NoResults";
 import { Loading } from "@/app/components/table/Loading";
 import { CV, Role } from "@/app/components/table/types";
+import { deleteCvFromBlob } from "@/utils/blobRequests";
+import { deleteCv } from "@/utils/cvRequests";
+import { toast } from "@/components/ui/sonner";
 
 type Props = {
   cvs: CV[];
@@ -24,6 +27,19 @@ const columns = ["applicant", "role", "requirements", "fitScore"];
 export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
   if (loading) return <Loading />;
   if (!cvs.length) return <NoResults />;
+
+  const handleDelete = async (cv: CV, roleId?: string) => {
+    // todo: loading state?
+    if (roleId) {
+      // TODO: delete role from cv
+      toast.success("The role was successfully deleted");
+    } else {
+      await deleteCvFromBlob(cv);
+      const newCvs = await deleteCv(cv.id);
+      toast.success("The CV was successfully deleted");
+      onSetCvs(newCvs);
+    }
+  };
 
   return (
     <Table>
@@ -47,7 +63,7 @@ export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
               <TableRow key={id} className="w-full">
                 <ApplicantCell cv={cv} />
                 <TableRowContent />
-                <DeleteCell />
+                <DeleteCell onDelete={() => handleDelete(cv)} />
               </TableRow>
             );
           }
@@ -56,7 +72,7 @@ export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
             <TableRow key={`${id}-${role.id}`} className="w-full">
               {index === 0 && <ApplicantCell cv={cv} rowSpan={roles.length} />}
               <TableRowContent role={role} />
-              <DeleteCell />
+              <DeleteCell onDelete={() => handleDelete(cv, role.id)} />
             </TableRow>
           ));
         })}
@@ -81,13 +97,12 @@ const ApplicantCell = ({ cv, rowSpan }: { cv: CV; rowSpan?: number }) => (
   </TableCell>
 );
 
-const DeleteCell = () => (
+const DeleteCell = ({ onDelete }: { onDelete: () => Promise<void> }) => (
   <TableCell className="text-center">
     <Trash2
       size={16}
       className="cursor-pointer text-indigo-900 hover:text-red-800"
-      // todo: add delete functionality: does it delete both from the blob and db?
-      // onClick={async () => await deleteCVAnalysisData(cv.id, onSetCvs)}
+      onClick={async () => await onDelete()}
     />
   </TableCell>
 );

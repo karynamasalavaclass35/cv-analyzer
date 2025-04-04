@@ -1,4 +1,4 @@
-import { put, list } from "@vercel/blob";
+import { put, list, del } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 import { getBlobFileData } from "@/utils/blobRequests";
@@ -57,7 +57,29 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ data: blob });
   } catch (error) {
     return NextResponse.json(
-      { message: `Error uploading file: ${error}` },
+      { message: `Error uploading file to blob storage: ${error}` },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request): Promise<NextResponse> {
+  try {
+    const res = await request.json();
+
+    if (!res.blobUrl) {
+      return NextResponse.json(
+        { message: "No blob URL provided" },
+        { status: 400 }
+      );
+    }
+
+    await del(res.blobUrl);
+    const { blobs } = await list();
+    return NextResponse.json({ data: blobs });
+  } catch (error) {
+    return NextResponse.json(
+      { message: `Error occurred during deletion from blob storage: ${error}` },
       { status: 500 }
     );
   }

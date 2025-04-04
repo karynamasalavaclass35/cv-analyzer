@@ -1,4 +1,4 @@
-import { ExtendedPutBlobResult } from "@/app/types";
+import { CV } from "@/app/components/table/types";
 import { toast } from "@/components/ui/sonner";
 import { ListBlobResultBlob, PutBlobResult } from "@vercel/blob";
 
@@ -23,20 +23,12 @@ export const getBlobsData = async () => {
   return await response.json();
 };
 
-export const deleteCVAnalysisData = async (
-  blob: ExtendedPutBlobResult,
-  onSetBlobData: (blobData: ExtendedPutBlobResult[]) => void
-): Promise<void> => {
+export const deleteCvFromBlob = async (cv: CV): Promise<void> => {
   try {
-    const response = await fetch("/api/analysis", {
+    await fetch("/api/blobs?delete", {
       method: "DELETE",
-      body: JSON.stringify({ blobUrl: blob.url }),
+      body: JSON.stringify({ blobUrl: cv.url }),
     });
-    const responseJson = await response.json();
-    onSetBlobData(responseJson.data);
-    toast.success(
-      `${blob.analysis.fileName} file analysis deleted successfully`
-    );
   } catch (error) {
     toast.error("Failed to delete CV analysis data");
   }

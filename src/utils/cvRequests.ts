@@ -69,3 +69,12 @@ export const updateCv = async (cvId: string, prompt: Prompt): Promise<CV[]> => {
   const { data } = await response.json();
   return data;
 };
+
+export const deleteCv = async (cvId: string): Promise<CV[]> => {
+  const response = await fetch(`/api/cvs?delete`, {
+    method: "DELETE",
+    body: JSON.stringify({ id: cvId }),
+  });
+  const { data } = await response.json();
+  return data;
+};

@@ -109,3 +109,28 @@ export async function PUT(request: Request): Promise<NextResponse> {
     );
   }
 }
+
+export async function DELETE(request: Request): Promise<NextResponse> {
+  const { id }: { id: string } = await request.json();
+  const cvs: CV[] = await redis.lrange("cvs", 0, -1);
+
+  try {
+    const indexToRemove = cvs.findIndex((cv: CV) => cv.id === id);
+
+    if (indexToRemove === -1) {
+      return NextResponse.json(
+        { message: "CV with this id not found" },
+        { status: 404 }
+      );
+    }
+
+    await redis.lrem("cvs", 1, cvs[indexToRemove]);
+    const updatedCvs = await redis.lrange("cvs", 0, -1);
+    return NextResponse.json({ data: updatedCvs });
+  } catch (error) {
+    return NextResponse.json(
+      { message: `Error deleting cv from database: ${error}` },
+      { status: 500 }
+    );
+  }
+}

@@ -13,7 +13,7 @@ import { NoResults } from "@/app/components/table/NoResults";
 import { Loading } from "@/app/components/table/Loading";
 import { CV, Role } from "@/app/components/table/types";
 import { deleteCvFromBlob } from "@/utils/blobRequests";
-import { deleteCv } from "@/utils/cvRequests";
+import { deleteCv, deleteCvRole } from "@/utils/cvRequests";
 import { toast } from "@/components/ui/sonner";
 
 type Props = {
@@ -29,16 +29,18 @@ export function AnalysisTable({ cvs, onSetCvs, loading }: Props) {
   if (!cvs.length) return <NoResults />;
 
   const handleDelete = async (cv: CV, roleId?: string) => {
-    // todo: loading state?
+    let newCvs: CV[] = [];
+
     if (roleId) {
-      // TODO: delete role from cv
+      newCvs = await deleteCvRole(cv.id, roleId);
       toast.success("The role was successfully deleted");
     } else {
       await deleteCvFromBlob(cv);
-      const newCvs = await deleteCv(cv.id);
+      newCvs = await deleteCv(cv.id);
       toast.success("The CV was successfully deleted");
-      onSetCvs(newCvs);
     }
+
+    onSetCvs(newCvs);
   };
 
   return (

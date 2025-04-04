@@ -111,7 +111,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
 }
 
 export async function DELETE(request: Request): Promise<NextResponse> {
-  const { id }: { id: string } = await request.json();
+  const { id, roleId }: { id: string; roleId?: string } = await request.json();
   const cvs: CV[] = await redis.lrange("cvs", 0, -1);
 
   try {
@@ -124,7 +124,16 @@ export async function DELETE(request: Request): Promise<NextResponse> {
       );
     }
 
-    await redis.lrem("cvs", 1, cvs[indexToRemove]);
+    const cv = cvs[indexToRemove];
+
+    // if there is a roleId, delete the role from the cv, otherwise delete the entire CV
+    if (roleId) {
+      cv.roles = cv.roles.filter((role) => role.id !== roleId);
+      await redis.lset("cvs", indexToRemove, JSON.stringify(cv));
+    } else {
+      await redis.lrem("cvs", 1, cv);
+    }
+
     const updatedCvs = await redis.lrange("cvs", 0, -1);
     return NextResponse.json({ data: updatedCvs });
   } catch (error) {

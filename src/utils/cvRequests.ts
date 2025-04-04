@@ -78,3 +78,15 @@ export const deleteCv = async (cvId: string): Promise<CV[]> => {
   const { data } = await response.json();
   return data;
 };
+
+export const deleteCvRole = async (
+  cvId: string,
+  roleId: string
+): Promise<CV[]> => {
+  const response = await fetch(`/api/cvs?deleteRole`, {
+    method: "DELETE",
+    body: JSON.stringify({ id: cvId, roleId }),
+  });
+  const { data } = await response.json();
+  return data;
+};
